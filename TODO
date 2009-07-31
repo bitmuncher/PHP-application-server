@@ -1,0 +1,3 @@
+TODO:
+- add IPC to notify master about current worker status, so master can
+    trace how many workers it must fork or kill
