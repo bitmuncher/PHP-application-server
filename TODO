@@ -1,3 +1,2 @@
 TODO:
-- add IPC to notify master about current worker status, so master can
-    trace how many workers it must fork or kill
+- IPC routines to facilitate client IPC communication (with master and possibly with other clients?)

@@ -29,8 +29,9 @@ class A2o_AppSrv
     protected $_version = '0.1.0';
 
     // Data of current process
-    protected $_whoAmI   = false;    // cli/master/worker
-    protected $_myPid    = false;    // pid of current process
+    protected $_whoAmI     = false;    // cli/master/worker
+    protected $_whoAmI_log = false;    // CLI/MASTER/worker
+    protected $_myPid      = false;    // pid of current process
     
     // Process status
     protected $_procStatus            = 'init';   // current process status
@@ -51,7 +52,7 @@ class A2o_AppSrv
     // CLI arguments parsing
     protected $_parseCliArgs = true;
     protected $_cliArgsArray = true; // CHECK used?
-    
+
     // Debugging
     protected $_debugEnabled = false;
     protected $_debugLevel   = 5;
@@ -78,20 +79,38 @@ class A2o_AppSrv
     protected $_mp_minIdleWorkers = 1;
     protected $_mp_maxIdleworkers = 2;   //TODO
     protected $_mp_maxWorkers     = 10;
-    
+
     // Pool of workers
+    /*
+     * structure:
+     * $_mp_workers = array(
+     *     0 => array(
+     *         'pid'          => 1234,
+     *         'status'       => '(init|idle|working|exiting)',
+     *         'socket_write' => @resource,
+     *         'socket_read'  => @resource,
+     *     ),
+     *     1 => array...
+     * );
+     */
     protected $_mp_workers        = array();
 
     // Worker process properties
-    private $_wp_parentPid            = false;
-    private $_wp_childId              = false;   // TODO how to get this?
-    private $_wp_clientSocket         = false;
-    private $_wp_clientAddress        = false;
-    private $_wp_clientPort           = false;
-    private $_wp_clientRequestHeaders = false;
-    private $_wp_clientRequestBody    = false;
-    private $_wp_appServerResponse    = false;
+    protected $_wp_masterPid            = false;
+    protected $_wp_masterSocket_read    = false;
+    protected $_wp_masterSocket_write   = false;
+    protected $_wp_workerId             = false;
+    protected $_wp_clientSocket         = false;
+    protected $_wp_clientAddress        = false;
+    protected $_wp_clientPort           = false;
+    protected $_wp_clientRequestHeaders = false;
+    protected $_wp_clientRequestBody    = false;
+    protected $_wp_appServerResponse    = false;
     protected $worker_writeBanner     = true;
+
+    // Signal handling
+    protected $_sh_processing      = false;
+    protected $_sh_deferredSignals = array();
     /**************************************************************************\
     |
     | EOF General settings
@@ -180,7 +199,7 @@ class A2o_AppSrv
 
 	// If debugging is enabled, do not fork, just init the CLI->MASTER
 	if ($this->_debugEnabled) {
-	    $this->_debug("Debug mode enabled, so not forking, just silently initializing as master");
+	    $this->_debug("Debug mode enabled thus not forking, but just silently initializing as master");
 	} else {
 	    // Fork and exit to daemonize
 	    $pid = pcntl_fork();
@@ -199,7 +218,9 @@ class A2o_AppSrv
 	$this->_masterProcess_initWorkDir();
 	$this->_masterProcess_initPidFile();
 	$this->_masterProcess_initSocket();
-	$this->_masterProcess_installSignalHandlers();
+	
+	// Install signal handlers
+	$this->_signalHandler_install();
 	
 	// Start running the master process
 	$this->_masterProcess_run();
@@ -226,9 +247,10 @@ class A2o_AppSrv
      */
     private function _cliProcess_init ()
     {
-	$this->_whoAmI   = 'cli';
-	$this->_myPid    = getmypid();
-	$this->_myStatus = 'init';
+	$this->_whoAmI     = 'cli';
+	$this->_whoAmI_log = 'CLI';
+	$this->_myPid      = getmypid();
+	$this->_myStatus   = 'init';
     }
 
 
@@ -514,6 +536,7 @@ class A2o_AppSrv
 		    $this->_procStatus = 'exiting';
 		    $this->_exit();
 		} else {
+		    if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusIdle();
 		    $this->_procStatus = 'idle';
 		    return true;
 		}
@@ -536,6 +559,7 @@ class A2o_AppSrv
 		$this->_exit();
 	    }
 	    if ($newProcStatus == 'working') {
+		if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusWorking();
 		$this->_procStatus = 'working';
 		return true;
 	    }
@@ -580,11 +604,12 @@ class A2o_AppSrv
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
 	// Set master process data
-	$this->_whoAmI = 'master';
-	$this->_myPid  = getmypid();
+	$this->_whoAmI     = 'master';
+	$this->_whoAmI_log = 'MASTER';
+	$this->_myPid      = getmypid();
 
 	// Set common child data
-	$this->_wp_parentPid = $this->_myPid;
+	$this->_wp_masterPid = $this->_myPid;
 
 	// Common init
 	set_time_limit(0);
@@ -693,30 +718,6 @@ class A2o_AppSrv
 
 
     /**
-     * _masterProcess_installSignalHandlers
-     *
-     * Install signal handlers
-     *
-     * @return   void
-     */
-    private function _masterProcess_installSignalHandlers ()
-    {	
-	$this->_debug("-----> ". __FUNCTION__, 9);
-
-	// Install signal handlers
-	declare (ticks = 1);
-	pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));
-	pcntl_signal(SIGCHLD, array(&$this, 'signalHandler'));
-	if ($this->_debugEnabled) {
-	    pcntl_signal(SIGINT,  array(&$this, 'signalHandler'));   // Ctrl+C
-	}
-
-	$this->_debug("Signal handlers installed");
-    }
-
-
-
-    /**
      * _masterProcess_run
      *
      * Run the main master process loop
@@ -727,18 +728,13 @@ class A2o_AppSrv
 
 	$this->_debug('Hello from master process again');
 
-/*
-	$this->_debug("Sleeping for some seconds");
-	sleep(20);
-	$this->_debug("Sucky alarm clock");
-	exit;
-*/
-
 	// Enter the main loop
 	do {
 	    if ($this->_setStatus('working')) {
 		// Poll for exit statuses
-		$this->_mp_pollWorkers();
+		$this->_mp_pollWorkers_forExit();
+		
+		//$this->_debug_r($this->_mp_workers);
 
 		// Fork if too few idle workers
 		$this->_mp_forkIfRequired();
@@ -755,11 +751,11 @@ class A2o_AppSrv
 
 
     /**
-     * _mp_pollWorkers
+     * _mp_pollWorkers_forExit
      *
      * Polls children for exit statuses
      */
-    private function _mp_pollWorkers ()
+    private function _mp_pollWorkers_forExit ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -826,18 +822,41 @@ class A2o_AppSrv
 
 	// Do we need to fork a new worker?
 	if ($forkNewWorker === true) {
-	    $pid = pcntl_fork();
-	    if ($pid == -1) throw new Exception('Could not fork');
+	    $this->_mp_fork();
+	}
+    }
 
-	    if ($pid) {
-	        // We are a parent/master
-	        $this->_mp_registerWorker($pid);
-	        $this->_debug("worker with pid $pid registered");
-	    } else {
-	        // We are the child/worker
-	        $this->_workerProcess_run();
-	        exit;   // Just as a precaution
-	    }
+
+
+    /**
+     * _mp_fork
+     *
+     * Forks a new child
+     */
+    private function _mp_fork ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	
+	// Create new socket pair first
+	$r = socket_create_pair(AF_UNIX, SOCK_STREAM, 0, $socketPair);
+	if ($r === false) throw new Exception('Unable to create a new socket pair');
+	socket_set_nonblock($socketPair[0]);
+	socket_set_nonblock($socketPair[1]);
+
+	// Fork then
+	$pid = pcntl_fork();
+	if ($pid == -1) throw new Exception('Could not fork');
+
+	if ($pid) {
+	    // We are a parent/master
+	    $workerId = $this->_mp_registerWorker($pid, $socketPair[0], $socketPair[1]);
+	    $this->_debug("worker with pid $pid registered");
+	    usleep(100000);
+	    $this->_ipc_tellWorker_workerId($workerId);
+	} else {
+	    // We are the child/worker
+	    $this->_workerProcess_run($socketPair[0], $socketPair[1]);
+	    exit;   // Just as a precaution
 	}
     }
 
@@ -902,7 +921,7 @@ class A2o_AppSrv
      *
      * Adds new worker to array of workers
      */
-    private function _mp_registerWorker ($pid)
+    private function _mp_registerWorker ($pid, $socketRead, $socketWrite)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -913,10 +932,12 @@ class A2o_AppSrv
 	for ($i=0 ; $i<$this->_mp_maxWorkers ; $i++) {
 	    if (!isset($this->_mp_workers[$i])) {
 		$this->_mp_workers[$i] = array(
-		    'pid'    => $pid,
-		    'status' => 'idle',
+		    'pid'          => $pid,
+		    'status'       => 'idle',
+		    'socket_read'  => $socketRead,
+		    'socket_write' => $socketWrite,
 		);
-		return true;
+		return $i;
 	    }
 	}
         throw new Exception ('No more empty slots for new children');
@@ -936,6 +957,8 @@ class A2o_AppSrv
 	if (!isset($this->_mp_workers[$workerId])) {
 	    throw new Exception("worker with id $workerId not listed in array");
 	}
+	socket_close($this->_mp_workers[$workerId]['socket_read']);
+	socket_close($this->_mp_workers[$workerId]['socket_write']);
 	unset($this->_mp_workers[$workerId]);
     }
     /**************************************************************************\
@@ -958,12 +981,12 @@ class A2o_AppSrv
      *
      * Run the main worker process loop
      */
-    private function _workerProcess_run ()
+    private function _workerProcess_run ($masterSocket_read, $masterSocket_write)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
 	// Initialize worker
-	$this->_wp_init();
+	$this->_wp_init($masterSocket_read, $masterSocket_write);
 	$this->_setStatus('idle');
 	
 	// Enter the main loop
@@ -990,22 +1013,29 @@ class A2o_AppSrv
      *
      * Initialize the worker process
      */
-    private function _wp_init ()
+    private function _wp_init ($masterSocket_read, $masterSocket_write)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	$this->_whoAmI   = 'worker';
-	$this->_myPid    = getmypid();
-	$this->_children = array();
-	$this->_debug('Hello from worker process');
-	
+	// Basic data
+	$this->_whoAmI     = 'worker';
+	$this->_whoAmI_log = 'worker';
+	$this->_myPid      = getmypid();
+	$this->_mp_workers = array();
+
+	// IPC to master
+	$this->_wp_masterSocket_read  = $masterSocket_read;
+	$this->_wp_masterSocket_write = $masterSocket_write;
+
 	// Set the socket to non-blocking
 	socket_set_nonblock($this->_listenSocket);
+
+	$this->_debug('Hello from worker process');
     }
 
 
     
-    /*
+    /**
      * _wp_getNewConnection
      *
      * Try to receive new connection, but do not block
@@ -1035,7 +1065,7 @@ class A2o_AppSrv
 
 
 
-    /*
+    /**
      * worker_handleRequest
      *
      * Client request handler
@@ -1050,7 +1080,7 @@ class A2o_AppSrv
 
 	if (!$this->_wp_isClientAllowed()) {
 	    $this->_debug("Client not allowed: $this->_wp_clientAddress");
-	    $this->_wp_writeError("Client not allowed: $this->_wp_clientAddress");
+	    $this->worker_writeError_http("Client not allowed: $this->_wp_clientAddress");
 	    $this->worker_closeConnection();
 	    return;
 	}
@@ -1059,20 +1089,20 @@ class A2o_AppSrv
 	if ($this->worker_writeBanner) {
 	    $this->_wp_writeBanner();
 	}
-	$this->_wp_readRequest();
+	$this->worker_readRequest_http();
 	$this->worker_handleRequest();
-	$this->_wp_writeResponse();
+	$this->worker_writeResponse_http();
 	$this->worker_closeConnection();
 	return;
     }
 
 
 
-    /*
-    * _wp_isClientAllowed
-    *
-    * Check if client is allowed to connect
-    */
+    /**
+     * _wp_isClientAllowed
+     *
+     * Check if client is allowed to connect
+     */
     private function _wp_isClientAllowed ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
@@ -1087,11 +1117,11 @@ class A2o_AppSrv
     
 
 
-    /*
-    * _wp_writeBanner
-    *
-    * Writes initial banner to the client 
-    */
+    /**
+     * _wp_writeBanner
+     *
+     * Writes initial banner to the client 
+     */
     private function _wp_writeBanner ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
@@ -1110,12 +1140,12 @@ class A2o_AppSrv
 
 
 
-    /*
-    * _wp_readRequest
-    *
-    * Read the request from client
-    */
-    private function _wp_readRequest ()
+    /**
+     * worker_readRequest_http
+     *
+     * Read the HTTP request from client
+     */
+    private function worker_readRequest_http ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -1162,11 +1192,11 @@ class A2o_AppSrv
 
 
 
-    /*
-    * worker_handleRequest
-    *
-    * Handles the client request
-    */
+    /**
+     * worker_handleRequest
+     *
+     * Handles the client request
+     */
     protected function worker_handleRequest ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
@@ -1177,27 +1207,28 @@ class A2o_AppSrv
 
 
 
-    /*
-    * _wp_writeError
-    *
-    * Writes error to the client socket 
-    */
-    private function _wp_writeError ($errMsg)
+    /**
+     * worker_writeError_http
+     *
+     * Writes error to the client socket 
+     */
+    private function worker_writeError_http ($errMsg)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	$errMsgEncoded = xmlrpc_encode("ERROR: $errMsg");
-	$r = socket_write($this->_wp_clientSocket, ($errMsgEncoded), strlen($errMsgEncoded));
+	$errMsgFinal  = "HTTP/1.1 500 Internal server error\n\n";
+	$errMsgFinal .= "$errMsg";
+	$r = socket_write($this->_wp_clientSocket, ($errMsgFinal), strlen($errMsgFinal));
     }
 
 
 
-    /*
-    * _wp_writeResponse
-    *
-    * Writes response to the client socket 
-    */
-    private function _wp_writeResponse ()
+    /**
+     * worker_writeResponse_http
+     *
+     * Writes response to the client socket 
+     */
+    private function worker_writeResponse_http ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -1210,12 +1241,12 @@ class A2o_AppSrv
 
 
 
-    /*
-    * worker_closeConnection
-    *
-    * Closes the client connection and resets the client data so worker can 
-    * accept new connection
-    */
+    /**
+     * worker_closeConnection
+     *
+     * Closes the client connection and resets the client data so worker can 
+     * accept new connection
+     */
     private function worker_closeConnection ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
@@ -1237,14 +1268,39 @@ class A2o_AppSrv
     \**************************************************************************/
     
 
-    
+
 
 
     /**************************************************************************\
     |
-    | SIGNAL handlers
+    | SIGNAL handling routines
     |
     \**************************************************************************/
+    /**
+     * _signalHandler_install
+     *
+     * Install signal handlers
+     *
+     * @return   void
+     */
+    private function _signalHandler_install ()
+    {	
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	// Install signal handlers
+	declare (ticks = 1);
+	pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));
+	pcntl_signal(SIGCHLD, array(&$this, 'signalHandler'));
+	pcntl_signal(SIGUSR1, array(&$this, 'signalHandler'));
+	if ($this->_debugEnabled) {
+	    pcntl_signal(SIGINT,  array(&$this, 'signalHandler'));   // Ctrl+C
+	}
+
+	$this->_debug("Signal handlers installed");
+    }
+
+
+
     /**
      * signalHandler
      *
@@ -1256,6 +1312,16 @@ class A2o_AppSrv
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
+	// If we are just processing some other interrupt, store this interrupt in the array
+	if ($this->_sh_isProcessing() == true) {
+	    $this->_sh_addDeferredSignal($signo);
+	    return;
+	}
+
+	// Notify that we are processing the interrupt currently
+	$this->_sh_setFlag_processing();
+	
+	// Let us process the interrupt now
 	if ($this->_whoAmI === 'cli') {
 	    $this->_signalHandler_cliProcess($signo);
 
@@ -1268,27 +1334,37 @@ class A2o_AppSrv
 	} else {
 	    throw new A2o_AppSrv_Exception("Unknown _whoAmI: $this->_whoAmI");
 	}
+
+	// Notify that we have finished
+	$this->_sh_unsetFlag_processing();
+	
+	// Process deferred signal - warning - recursion
+	$this->_sh_processDeferredSignal();
     }
 
 
 
     /**
-    * _signalHandler_masterProcess
-    *
-    * Signal handler for master process
-    */
+     * _signalHandler_masterProcess
+     *
+     * Signal handler for master process
+     */
     private function _signalHandler_masterProcess ($signo)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
 	switch ($signo) {
+	    case SIGUSR1:
+		$this->_debug("Caught SIGUSR1, polling the children for IPC messages...");
+		$this->_ipc_pollWorkers();
+		break;
+	    case SIGCHLD:
+		$this->_debug("Caught SIGCHLD, polling the children for exit statuses...");
+		$this->_mp_pollWorkers_forExit();
+		break;
 	    case SIGTERM:
 		$this->_debug("Caught SIGTERM, running shutdown method...");
 		$this->_exit();
-		break;
-	    case SIGCHLD:
-		$this->_debug("Caught SIGCHLD, polling the children...");
-		$this->_mp_pollWorkers();
 		break;
 	    case SIGINT:
 		$this->_debug("Caught SIGINT, running shutdown method...");
@@ -1303,15 +1379,19 @@ class A2o_AppSrv
 
 
     /**
-    * _signalHandler_workerProcess
-    *
-    * Signal handler for worker process
-    */
+     * _signalHandler_workerProcess
+     *
+     * Signal handler for worker process
+     */
     private function _signalHandler_workerProcess ($signo)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
 	switch ($signo) {
+	    case SIGUSR1:
+		$this->_debug("Caught SIGUSR1, reading master for IPC message(s?)...");
+		$this->_ipc_readMaster();
+		break;
 	    case SIGTERM:
 		$this->_debug("Caught SIGTERM, running shutdown method...");
 		$this->_exit();
@@ -1324,9 +1404,261 @@ class A2o_AppSrv
 		$this->_exit();
 	}
     }
+
+
+
+    /**
+     * _sh_isProcessing
+     *
+     * Check if some signal is currently being processed
+     */
+    private function _sh_isProcessing ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	return $this->_sh_processing;
+    }
+
+
+
+    /**
+     * _sh_setFlag_processing
+     *
+     * Tell the 'world' (us) that we are processing some signal
+     */
+    private function _sh_setFlag_processing ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	$this->_sh_processing = true;
+    }
+
+
+
+    /**
+     * _sh_unsetFlag_processing
+     *
+     * Tell the 'world' (us) that we are NOT processing some signal
+     */
+    private function _sh_unsetFlag_processing ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	$this->_sh_processing = false;
+    }
+
+
+
+    /**
+     * _sh_addDeferredSignal
+     *
+     * Add signal to the array of signals which should be processed in deferred mode
+     */
+    private function _sh_addDeferredSignal ($signo)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	array_push($this->_sh_deferredSignals, $signo);
+    }
+
+
+
+    /**
+     * _sh_processDeferredSignal
+     *
+     * Process one deferred signal - this method processes all signals recursively
+     */
+    private function _sh_processDeferredSignal ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	
+	// Check if there any deferred signals to process
+	if (count($this->_sh_deferredSignals) > 0) {
+	    $signo = array_shift($this->_sh_deferredSignals);
+	    $this->signalHandler($signo);
+	}
+    }
     /**************************************************************************\
     |
-    | EOF SIGNAL handlers
+    | EOF SIGNAL handling routines
+    |
+    \**************************************************************************/
+
+
+
+
+
+    /**************************************************************************\
+    |
+    | IPC routines
+    |
+    \**************************************************************************/
+    /**
+     * _ipc_pollWorkers
+     *
+     * Poll workers about their messages
+     */
+    private function _ipc_pollWorkers ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	
+	foreach ($this->_mp_workers as $workerId => $worker) {
+	    $msg = socket_read($worker['socket_read'], 256);
+	    $msg = trim($msg);
+	    if ($msg != '') {
+		$this->_debug("Received message from worker $workerId: $msg", 8);
+	    }
+	    
+	    // If no message is received
+	    if ($msg == '') continue;
+	    
+	    switch ($msg) {
+		case 'system::myStatus::idle':
+		    $this->_mp_workers[$workerId]['status'] = 'idle';
+		    break;
+		case 'system::myStatus::working':
+		    $this->_mp_workers[$workerId]['status'] = 'working';
+		    break;
+		default:
+		    throw new A2o_AppSrv_Exception("Unknown IPC message from worker: $msg");
+	    }
+	}
+    }
+
+
+
+    /**
+     * _ipc_readMaster
+     *
+     * Read master message
+     */
+    private function _ipc_readMaster ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+	
+        $msg = socket_read($this->_wp_masterSocket_read, 256);
+	$msg = trim($msg);
+	if ($msg != '') {
+	    $this->_debug("Received message from master: $msg", 8);
+	}
+	    
+        // If no message is received
+        if ($msg == '') continue;
+        
+        if (preg_match('/^system::setWorkerId::([0-9]+)$/', $msg, $matches)) {
+    	    $this->_wp_workerId = $matches[1];
+        } else {
+	    throw new A2o_AppSrv_Exception("Unknown IPC message from master: $msg");
+	}
+    }
+
+
+
+    /**
+     * _ipc_tellWorker_workerId
+     *
+     * Tell the worker which is it's ID
+     */
+    private function _ipc_tellWorker_workerId ($workerId)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$ipcMessage = "system::setWorkerId::$workerId";
+	$this->_ipc_tellWorker($workerId, $ipcMessage);
+    }
+
+
+
+    /**
+     * _ipc_tellMaster_statusWorking
+     *
+     * Notify the master that we are in the state of processing the client request
+     */
+    private function _ipc_tellMaster_statusWorking ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$ipcMessage = "system::myStatus::working";
+	$this->_ipc_tellMaster($ipcMessage);
+    }
+
+
+
+    /**
+     * _ipc_tellMaster_statusIdle
+     *
+     * Notify the master that we are in the idle state
+     */
+    private function _ipc_tellMaster_statusIdle ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$ipcMessage = "system::myStatus::idle";
+	$this->_ipc_tellMaster($ipcMessage);
+    }
+
+
+
+    /**
+     * _ipc_tellMaster
+     *
+     * Notify the master about something
+     */
+    private function _ipc_tellMaster ($ipcMessage)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$ipcMessage .= "\n";
+	$this->_ipc_tellMasterRaw($ipcMessage);
+    }
+
+	
+	
+    /**
+     * _ipc_tellWorker
+     *
+     * Notify the worker about something
+     */
+    private function _ipc_tellWorker ($workerId, $ipcMessage)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$ipcMessage .= "\n";
+	$this->_ipc_tellWorkerRaw($workerId, $ipcMessage);
+    }
+
+	
+	
+    /**
+     * _ipc_tellMasterRaw
+     *
+     * Send the message to the master and send a signal so it is surely received in a timely manner
+     */
+    private function _ipc_tellMasterRaw ($rawIpcMessage)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$r = socket_write($this->_wp_masterSocket_write, $rawIpcMessage, strlen($rawIpcMessage));
+	if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_wp_masterSocket_write)));
+
+	posix_kill($this->_wp_masterPid, SIGUSR1);
+    }
+
+
+
+    /**
+     * _ipc_tellWorkerRaw
+     *
+     * Send the message to the worker and send a signal so it is surely received in a timely manner
+     */
+    private function _ipc_tellWorkerRaw ($workerId, $rawIpcMessage)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$r = socket_write($this->_mp_workers[$workerId]['socket_write'], $rawIpcMessage, strlen($rawIpcMessage));
+	if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_mp_workers[$workerId]['socket_write'])));
+
+	posix_kill($this->_mp_workers[$workerId]['pid'], SIGUSR1);
+    }
+    /**************************************************************************\
+    |
+    | EOF IPC routines
     |
     \**************************************************************************/
 
@@ -1398,28 +1730,28 @@ class A2o_AppSrv
 	    $r = posix_kill($workerData['pid'], SIGTERM);
 	    if ($r !== true) throw new Exception("Unable to send SIGTERM");
 	}
-	
+
 	// Wait a second
 	sleep(2);
-	
+
 	// Poll children
-	$this->_mp_pollWorkers();
-	
+	$this->_mp_pollWorkers_forExit();
+
 	// Wait another second
 	sleep(1);
-	
+
 	// Kill remaining children
 	foreach ($this->_mp_workers as $workerData) {
 	    $r = posix_kill($workerData['pid'], SIGKILL);
 	    if ($r !== true) throw new Exception("Unable to send SIGKILL");
 	}
-	
+
 	// Close the socket
 	$r = socket_close($this->_listenSocket);
 
 	// Remove pidfile
 	if (file_exists($this->_pidFile)) unlink($this->_pidFile);
-	
+
 	// Close logfile and exit
 	$this->_debug('Closing logfile and exiting...');
 	$this->_debug('-------------------------------------------------');
@@ -1438,12 +1770,16 @@ class A2o_AppSrv
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	// Close the sockets
+	// Close the client and listening sockets
 	socket_close($this->_listenSocket);
 	if ($this->_wp_clientSocket !== false) {
 	    socket_close($this->_wp_clientSocket);
 	}
 	
+	// Close the IPC sockets
+	socket_close($this->_wp_masterSocket_read);
+	socket_close($this->_wp_masterSocket_write);
+
 	// Close logfile and exit
 	$this->_debug('Closing logfile and exiting...');
 	if ($this->_logStream !== false) fclose($this->_logStream);
@@ -1474,7 +1810,7 @@ class A2o_AppSrv
     protected function _debug ($msg, $level=1)
     {
 	// Format message
-	$msg2echo = date('Y-m-d H:i:s') ." ". strtoupper($this->_whoAmI) ." (pid=$this->_myPid): $msg\n";
+	$msg2echo = date('Y-m-d H:i:s') ." $this->_whoAmI_log (pid=$this->_myPid): $msg\n";
 	
 	// Echo it if log stream is not open
 	if ($this->_logStream === false) {
@@ -1516,4 +1852,3 @@ class A2o_AppSrv
     |
     \**************************************************************************/
 }
-
