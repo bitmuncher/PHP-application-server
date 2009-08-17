@@ -40,7 +40,7 @@ class A2o_AppSrv
     |
     \**************************************************************************/
     // Metadata
-    protected $_version = '0.1.1';
+    protected $_version = '0.2.0';
 
     // Data of current process
     protected $_whoAmI     = false;    // cli/master/worker
@@ -114,13 +114,17 @@ class A2o_AppSrv
     protected $_wp_masterSocket_read    = false;
     protected $_wp_masterSocket_write   = false;
     protected $_wp_workerId             = false;
+
     protected $_wp_clientSocket         = false;
     protected $_wp_clientAddress        = false;
     protected $_wp_clientPort           = false;
-    protected $_wp_clientRequestHeaders = false;
-    protected $_wp_clientRequestBody    = false;
-    protected $_wp_appServerResponse    = false;
-    protected $worker_writeBanner     = true;
+
+    // Worker process - client request and server response handling
+    protected $_wp_clientRequest              = false;
+    protected $_wp_clientRequest_http_headers = false;
+    protected $_wp_clientRequest_http_body    = false;
+
+    protected $_wp_serverResponse             = false;
 
     // Signal handling
     protected $_sh_processing      = false;
@@ -1094,18 +1098,15 @@ class A2o_AppSrv
 
 	if (!$this->_wp_isClientAllowed()) {
 	    $this->_debug("Client not allowed: $this->_wp_clientAddress");
-	    $this->worker_writeError_http("Client not allowed: $this->_wp_clientAddress");
+	    $this->worker_writeError("Client not allowed: $this->_wp_clientAddress");
 	    $this->worker_closeConnection();
 	    return;
 	}
 
 	// Handle the client
-	if ($this->worker_writeBanner) {
-	    $this->_wp_writeBanner();
-	}
-	$this->worker_readRequest_http();
+	$this->worker_readRequest();
 	$this->worker_handleRequest();
-	$this->worker_writeResponse_http();
+	$this->worker_writeResponse();
 	$this->worker_closeConnection();
 	return;
     }
@@ -1132,34 +1133,25 @@ class A2o_AppSrv
 
 
     /**
-     * _wp_writeBanner
+     * worker_readRequest
      *
-     * Writes initial banner to the client 
+     * Read the request from client
      */
-    private function _wp_writeBanner ()
+    protected function worker_readRequest ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	$banner  = "Hello from $this->_appTitle, a standalone application server!\n";
-	$banner .= "This is a default  request handler which  behaves much like some HTTP server.\n";
-	$banner .= "First it reads  request headers,  and if they contain  'Content-Length:',  it\n";
-	$banner .= "proceeds to read the request body. When dual newline is received, the request\n";
-	$banner .= "is handed over to request handler function, which defaults to simple  echo of\n";
-	$banner .= "received content. Have fun!\n\n";
-	$r = socket_write($this->_wp_clientSocket, $banner, strlen($banner));
-	if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_wp_clientSocket)));
-
-	return true;
+	$this->_worker_readRequest_http();
     }
 
 
 
     /**
-     * worker_readRequest_http
+     * _worker_readRequest_http
      *
      * Read the HTTP request from client
      */
-    private function worker_readRequest_http ()
+    protected function _worker_readRequest_http ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -1172,12 +1164,12 @@ class A2o_AppSrv
 	    $r = socket_read($this->_wp_clientSocket, 16384, PHP_NORMAL_READ);
 	    if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_wp_clientSocket)));
 	    $thisLine = $r;
-	    $this->_debug("Input line from client: $thisLine", 9);
+	    $this->_debug("Input line from client: $thisLine", 8);
 	
 	    // If we receive header 'Content-Length: xxx' - parse it
 	    if (preg_match('/^content-length: ([0-9]+)\s*$/i', $thisLine, $matches)) {
 		$contentLength = $matches[1];
-		$this->_debug("Content-Length header from client: $contentLength", 9);
+		$this->_debug("Content-Length header from client: $contentLength", 8);
 	    }
 	
 	    // Check if this is an end of headers
@@ -1190,18 +1182,21 @@ class A2o_AppSrv
 	    $requestHeaders .= $thisLine;
 	    $prevLine        = $thisLine;
 	} while (true);
-	$this->_wp_clientRequestHeaders = $requestHeaders;
-	$this->_debug("Request headers from client: $this->_wp_clientRequestHeaders", 9);
+	$this->_wp_clientRequest_http_headers = $requestHeaders;
+	$this->_debug("Request headers from client: $this->_wp_clientRequest_http_headers", 7);
 	
 	// Read request body
 	if ($contentLength !== false) {
 	    $r = socket_read($this->_wp_clientSocket, $contentLength);
 	    if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_wp_clientSocket)));
 	}
-	$this->_wp_clientRequestBody = trim($r);
-	$this->_debug("Request body from client: $this->_wp_clientRequestBody", 9);
+	$this->_wp_clientRequest_http_body = trim($r);
+	$this->_debug("Request body from client: $this->_wp_clientRequest_http_body", 7);
 
-	return true;
+	// Save the original request
+	$this->_wp_clientRequest = $this->_wp_clientRequest_http_headers ."\n\n". $this->_wp_clientRequest_http_body;
+
+	return $this->_wp_clientRequest;
     }
 
 
@@ -1215,18 +1210,32 @@ class A2o_AppSrv
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	$this->_wp_appServerResponse = $this->_wp_clientRequestHeaders ."\n". $this->_wp_clientRequestBody;
+	$this->_wp_serverResponse = $this->_wp_clientRequest;
 	return true;
     }
 
 
 
     /**
-     * worker_writeError_http
+     * worker_writeError
      *
      * Writes error to the client socket 
      */
-    private function worker_writeError_http ($errMsg)
+    protected function worker_writeError ($errMsg)
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	$this->_worker_writeError_http($errMsg);
+    }
+
+
+
+    /**
+     * _worker_writeError_http
+     *
+     * Writes HTTP error code and error message to the client socket 
+     */
+    protected function _worker_writeError_http ($errMsg)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -1238,16 +1247,30 @@ class A2o_AppSrv
 
 
     /**
-     * worker_writeResponse_http
+     * worker_writeResponse
      *
      * Writes response to the client socket 
      */
-    private function worker_writeResponse_http ()
+    protected function worker_writeResponse ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
-	if ($this->_wp_appServerResponse !== false) {
-	    $r = socket_write($this->_wp_clientSocket, $this->_wp_appServerResponse, strlen($this->_wp_appServerResponse));
+	$this->_worker_writeResponse_http();
+    }
+
+
+
+    /**
+     * worker_writeResponse_http
+     *
+     * Writes HTTP response to the client socket 
+     */
+    protected function _worker_writeResponse_http ()
+    {
+	$this->_debug("-----> ". __FUNCTION__, 9);
+
+	if ($this->_wp_serverResponse !== false) {
+	    $r = socket_write($this->_wp_clientSocket, $this->_wp_serverResponse, strlen($this->_wp_serverResponse));
 	    if ($r === false) throw new Exception(socket_strerror(socket_last_error($this->_wp_clientSocket)));
 	}
 	return true;
@@ -1261,7 +1284,7 @@ class A2o_AppSrv
      * Closes the client connection and resets the client data so worker can 
      * accept new connection
      */
-    private function worker_closeConnection ()
+    protected function worker_closeConnection ()
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
@@ -1270,8 +1293,12 @@ class A2o_AppSrv
 	$this->_wp_clientSocket         = false;
 	$this->_wp_clientAddress        = false;
 	$this->_wp_clientPort           = false;
-	$this->_wp_clientRequestHeaders = false;
-	$this->_wp_clientRequestBody    = false;
+
+	$this->_wp_clientRequest              = false;
+	$this->_wp_clientRequest_http_headers = false;
+	$this->_wp_clientRequest_http_body    = false;
+	$this->_wp_serverResponse             = false;
+
 	$this->_debug("Client disconnected");
 	return true;
     }
@@ -1692,7 +1719,7 @@ class A2o_AppSrv
      *
      * @return   void
      */
-    private function _exit ($exitStatus=0)
+    protected function _exit ($exitStatus=0)
     {
 	$this->_debug("-----> ". __FUNCTION__, 9);
 
