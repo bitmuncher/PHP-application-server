@@ -1,22 +1,36 @@
 <?php
 /**
- * A2o Framework
+ * a2o framework
  *
  * LICENSE
  *
- * ...
+ * This source file is subject to the GNU GPLv3 license that is 
+ * bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://www.gnu.org/licenses/gpl.html
  *
  * @category   A2o
  * @package    A2o_AppSrv
  * @author     Bostjan Skufca <bostjan@a2o.si>
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
- * @license    FIXME
+ * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
 
 
 /**
+ * @see A2o_AppSrv_Exception
+ */
+require_once 'A2o/AppSrv/Exception.php';
+
+
+/**
+ * Standalone preforking PHP application server framework
+ *
  * @category   A2o
  * @package    A2o_AppSrv
+ * @author     Bostjan Skufca <bostjan@a2o.si>
+ * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
+ * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
 class A2o_AppSrv
 {
@@ -26,7 +40,7 @@ class A2o_AppSrv
     |
     \**************************************************************************/
     // Metadata
-    protected $_version = '0.1.0';
+    protected $_version = '0.1.1';
 
     // Data of current process
     protected $_whoAmI     = false;    // cli/master/worker
