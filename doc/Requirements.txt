@@ -1,0 +1,23 @@
+
+
+
+Requirements for running Standalone preforking PHP application server
+=====================================================================
+
+
+
+The following programs, PHP extensions and libraries are required:
+- BASH or compatible shell
+- ps
+- grep
+- sed
+- PHP >5.2.0 with CLI support
+- PHP extension: pcntl
+- PHP extension: posix
+- PHP extension: sockets
+- Zend Framework: for Autoloader feature
+
+Probably the list is incomplete, but normal PHP installations come with all the above features included.
+As diligent reader has probably noted, this SPPAS is intended to run on Un*x boxes. Feel free to port it 
+to Windows, you can send me patches.
+  

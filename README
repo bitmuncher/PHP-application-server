@@ -1,2 +1,4 @@
 Application server framework written in PHP and intended to run in standalone
 mode.
+
+See "doc/" directory for more information and "demos/" for examples of usage.

@@ -53,16 +53,3 @@ Methods that start with triple underscore prefix:
 
 
 
-Requirements
-------------
-
-The following programs and PHP modules/extensions are required:
-- BASH or compatible shell
-- ps
-- grep
-- sed
-- PHP >5.2.0
-- PHP extension: pcntl
-- PHP extension: posix
-- PHP extension: sockets
-

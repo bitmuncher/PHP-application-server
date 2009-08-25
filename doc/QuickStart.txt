@@ -1,0 +1,31 @@
+
+
+QuickStart quide for the impatient
+==================================
+
+
+
+To get the application server DEMO PROGRAM running as fast as possible, 
+you have to do the following:
+
+1. Review the Requirements.txt file in the "doc/" directory
+2. Copy the whole folder to "/opt/daemons/AppSrv" folder, like this:
+
+		$ cd PATH    (where this github package is, cd to the root of it)
+		$ mkdir /opt/daemons/AppSrv
+		$ cp * /opt/daemons/AppSrv
+
+3. Start it by running "demo" program, like this:
+
+		$ ./demo
+
+
+4. Access the application server by telneting to port 30000 of localhost, like this:
+
+		$ telnet localhost 30000
+		
+	or access it with a browser by this URI:
+		
+		http://localhost:30000/
+
+5. That is it!
