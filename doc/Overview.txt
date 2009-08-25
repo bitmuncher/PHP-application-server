@@ -1,0 +1,68 @@
+--------------------------------------------
+Standalone preforking PHP application server
+--------------------------------------------
+
+
+
+Overview
+========
+
+
+
+Framework consists of #FIXME main elements:
+1. Parent                (A2o_AppSrv class)
+2. CLI process part      (A2o_AppSrv_Cli class)
+3. Master process part   (A2o_AppSrv_Master class)
+4. Worker process part   (A2o_AppSrv_Worker class)
+5. IPC part              (A2o_AppSrv_IPC class)
+6. Client part(s)        (A2o_AppSrv_Client(_*) classes)
+
+CLI, master and workers communicate to the Parent via "parent" object property,
+which is assigned when instantiating an object via constructor.
+
+
+
+
+Method naming convention
+------------------------
+
+Methods that DO NOT start with underscore prefix are public methods and can be:
+- accessed from anywhere
+- overriden by extending the class.
+
+Methods that start with a single underscore prefix:
+- are protected/private methods,
+- can be overriden by extending the class,
+- are intended to be accessed from user functions.
+
+Methods that start with double underscore prefix:
+- are public in the context of A2o_AppSrv inner workings,
+- could be called from anywhere within A2o_AppSrv,
+- not intended for final public use.
+Example:
+
+    $this->_parent->__registerMe_asWorker();
+
+This registers the given process as a worker process. These methods should not 
+be overriden. Obviously internal methods __construct() and __destruct() do 
+not follow this rule as they are PHP internals.
+
+Methods that start with triple underscore prefix:
+- are private to a single class,
+- should not be overriden.
+
+
+
+Requirements
+------------
+
+The following programs and PHP modules/extensions are required:
+- BASH or compatible shell
+- ps
+- grep
+- sed
+- PHP >5.2.0
+- PHP extension: pcntl
+- PHP extension: posix
+- PHP extension: sockets
+
