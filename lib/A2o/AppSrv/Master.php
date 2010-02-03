@@ -275,7 +275,7 @@ class A2o_AppSrv_Master
 		// Initialize listening socket
 		$r = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 		if ($r === false)
-		    $this->_error("Unable to create socket");
+		$this->_error("Unable to create socket");
 		$this->_listenSocket = $r;
 
 		$r = socket_bind($this->_listenSocket, $this->_listenAddress, $this->_listenPort);

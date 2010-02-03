@@ -39,7 +39,7 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.3.0';
+    const version = '0.3.2';
 
     /**
      * Subsystem class names
@@ -47,7 +47,7 @@ class A2o_AppSrv
     protected $_className        = 'A2o_AppSrv';
     protected $_className_cli    = 'A2o_AppSrv_Cli';
     protected $_className_master = 'A2o_AppSrv_Master';
-	protected $_className_worker = 'A2o_AppSrv_Worker';
+    protected $_className_worker = 'A2o_AppSrv_Worker';
     protected $_className_log    = 'A2o_AppSrv_Log';
     protected $_className_debug  = 'A2o_AppSrv_Debug';
 

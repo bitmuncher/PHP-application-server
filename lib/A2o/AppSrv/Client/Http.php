@@ -168,7 +168,11 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     {
 		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$responseFinal  = "HTTP/1.1 $statusCode $statusHeader\n\n";
+		$responseFinal  = "HTTP/1.1 $statusCode $statusHeader\n";
+		$responseFinal .= "Connection: close\n";
+		$responseFinal .= "Content-Type: text/xml\n";
+		$responseFinal .= "Content-Length: ". strlen($response) ."\n\n";
+
 		$responseFinal .= "$response";
 		$this->write($responseFinal);
     }

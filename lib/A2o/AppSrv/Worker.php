@@ -268,7 +268,7 @@ class A2o_AppSrv_Worker
 
 		// Check if any client is waiting for connection
 		$r = @socket_accept($this->_listenSocket);
-		if (($r === false) && (socket_last_error($this->_listenSocket) === 0)) {
+		if (($r === false) && (@socket_last_error($this->_listenSocket) === 0)) {
 		    return false;
 		}
 
@@ -307,8 +307,8 @@ class A2o_AppSrv_Worker
 
 			// Make a log entry and close the connection
 			$this->_log("Client not allowed: $address");
-		    $this->closeConnection();
-		    return;
+			$this->closeConnection();
+			return;
 		}
 
 		// Create new client instance
@@ -351,19 +351,25 @@ class A2o_AppSrv_Worker
      */
     protected function handleClient ($client)
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+	$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Read client request
-		$this->readRequest();
+	// Read request from client
+	try {
+	    $client->readRequest();
+	} catch (A2o_AppSrv_Client_Exception $e) {
+    	    $this->_log("Client closed the connection unexpectedly: ". $e->getMessage());
+    	    $this->closeConnection();
+    	    return;
+	}
 
-		// Display it
-		$this->_debug("Client request START");
-		$this->_debug($client->request);
-		$this->_debug("Client request END");
+	// Display it
+	$this->_debug("Client request START");
+	$this->_debug($client->request);
+	$this->_debug("Client request END");
 
-		// Write a response
-		$client->writeResponse("Hello, World!\n");
-		$this->closeConnection();
+	// Write a response
+	$client->writeResponse("Hello, World!\n");
+	$this->closeConnection();
     }
 
 

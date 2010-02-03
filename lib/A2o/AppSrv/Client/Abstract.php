@@ -38,7 +38,7 @@ abstract class A2o_AppSrv_Client_Abstract
     /**
      * Parent instance object
      */
-	protected $_parent = NULL;
+    protected $_parent = NULL;
 
     /**
      * Socket handle
@@ -54,6 +54,14 @@ abstract class A2o_AppSrv_Client_Abstract
      * Remote TCP port
      */
     public $port = NULL;
+
+    /**
+     * Number of consecutive empty reads, max, timeout in seconds
+     * FreeBSD workaround
+     */
+    protected $__nrConsecutiveEmptyReads        =   0;
+    protected $__nrConsecutiveEmptyReadsMax     = 100;
+    protected $__nrConsecutiveEmptyReadsTimeout =   1;   // Seconds
 
 
 
@@ -71,9 +79,9 @@ abstract class A2o_AppSrv_Client_Abstract
     	$this->_parent = $parent;
 
     	// Client details
-		$this->socket  = $socket;
-		$this->address = $address;
-		$this->port    = $port;
+	$this->socket  = $socket;
+	$this->address = $address;
+	$this->port    = $port;
     }
 
 
@@ -85,9 +93,9 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function __destruct ()
     {
-		if ($this->socket !== NULL) {
-		    $this->closeConnection();
-		}
+	if ($this->socket !== NULL) {
+	    $this->closeConnection();
+	}
     }
 
 
@@ -102,12 +110,12 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function read ($length)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."($length)", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."($length)", 9);
 
-		$r = socket_read($this->socket, $length, PHP_BINARY_READ);
-		if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$r = socket_read($this->socket, $length, PHP_BINARY_READ);
+	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
 
-		return $r;
+	return $r;
     }
 
 
@@ -121,13 +129,34 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function readLine ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$r = socket_read($this->socket, 16384, PHP_NORMAL_READ);
-		if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
-		$line = $r;
+	// Try to read	
+	$r = @socket_read($this->socket, 16384, PHP_NORMAL_READ);
+	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$line = $r;
 
-		return $line;
+        // If empty content, bump the empty reads counter
+        if ($line == '') {
+            $this->__nrConsecutiveEmptyReads++;
+        } else {
+            $this->__nrConsecutiveEmptyReads = 0;
+        }
+
+        // If too many empty reads, sleep and try again, and throw exception if another empty read
+        // Basically FreeBSD workaround (Linux returns 'Connection reset by peer above')
+        if ($this->__nrConsecutiveEmptyReads > $this->__nrConsecutiveEmptyReadsMax) {
+            sleep($this->__nrConsecutiveEmptyReadsTimeout);
+            $r = socket_read($this->socket, 16384, PHP_NORMAL_READ);
+            if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+            $line = $r;
+
+            if ($line == '') {
+                throw new A2o_AppSrv_Client_Exception('Timeout reading client request');
+            }
+        }
+
+	return $line;
     }
 
 
@@ -140,10 +169,10 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function write ($data)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$r = socket_write($this->socket, $data, strlen($data));
-		if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$r = socket_write($this->socket, $data, strlen($data));
+	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
     }
 
 
@@ -157,13 +186,13 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function closeConnection ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		// Close the connection
-		if (is_resource($this->socket)) {
-			socket_close($this->socket);
-			$this->socket = NULL;
-		}
+	// Close the connection
+	if (is_resource($this->socket)) {
+		socket_close($this->socket);
+		$this->socket = NULL;
+	}
     }
 
 
