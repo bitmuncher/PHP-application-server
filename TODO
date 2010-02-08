@@ -1,3 +1,5 @@
 TODO:
 - IPC routines to facilitate client IPC communication (with master and possibly with other clients?)
 - timeouts
+- figure out how to facilitate system.methodSignature calls
+- add support for custom request and response headers in http clients

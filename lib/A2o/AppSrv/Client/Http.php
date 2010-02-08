@@ -127,7 +127,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
 		    $r = $this->read($contentLength);
 		    $this->request     .= $r;
 		    $this->requestBody  = trim($r);
-		    $this->_debug("HTTP request body from client: $this->requestBody", 7);
+		    $this->_debug("HTTP request body from client:\n$this->requestBody", 7);
 		}
     }
 
@@ -147,8 +147,12 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     {
 		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$errorMessageFinal  = "HTTP/1.1 $statusCode $statusHeader\n\n";
+		$errorMessageFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
+		$errorMessageFinal .= "Connection: close\n";
+		$errorMessageFinal .= "Content-Length: ". strlen($errorMessage) ."\n\n";
 		$errorMessageFinal .= "$errorMessage";
+
+		$this->_debug("HTTP error response:\n$errorMessageFinal", 7);
 		$this->write($errorMessageFinal);
     }
 
@@ -168,12 +172,13 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     {
 		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$responseFinal  = "HTTP/1.1 $statusCode $statusHeader\n";
+		$responseFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
 		$responseFinal .= "Connection: close\n";
 		$responseFinal .= "Content-Type: text/xml\n";
 		$responseFinal .= "Content-Length: ". strlen($response) ."\n\n";
-
 		$responseFinal .= "$response";
+
+		$this->_debug("HTTP response:\n$responseFinal", 7);
 		$this->write($responseFinal);
     }
 }

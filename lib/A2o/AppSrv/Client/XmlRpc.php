@@ -77,27 +77,4 @@ class A2o_AppSrv_Client_XmlRpc extends A2o_AppSrv_Client_Http
     	$this->request_raw    =& $this->requestBody;
     	$this->request_params =  xmlrpc_decode_request($this->request_raw, $this->request_method);
     }
-
-
-
-    /**
-     * Write the response, omit http headers CHECK FIXME WORKAROUND THINK
-     *
-     * @param    string   $response
-     * @return   void
-     */
-    public function writeResponse ($response, $statusCode='200', $statusHeader='OK')
-    {
-/*
-	$responseFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
-	$responseFinal .= "Connection: close\n";
-	$responseFinal .= "Content-Type: text/xml\n";
-	$responseFinal .= "Content-Length: ". strlen($response) ."\n\n";
-*/
-
-	$responseFinal  = '';
-	$responseFinal .= "$response";
-
-	$this->write($responseFinal);
-    }
 }
