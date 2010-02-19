@@ -31,7 +31,7 @@ Methods that DO NOT start with underscore prefix are public methods and can be:
 - overriden by extending the class.
 
 Methods that start with a single underscore prefix:
-- are protected/private methods,
+- are protected methods,
 - can be overriden by extending the class,
 - are intended to be accessed from user functions.
 
@@ -61,8 +61,7 @@ The following programs and PHP modules/extensions are required:
 - ps
 - grep
 - sed
-- PHP >5.2.0
+- PHP >=5.2.x
 - PHP extension: pcntl
 - PHP extension: posix
 - PHP extension: sockets
-

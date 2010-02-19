@@ -39,7 +39,7 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.3.3alpha';
+    const version = '0.4.0alpha';
 
     /**
      * Subsystem class names
@@ -116,8 +116,16 @@ class A2o_AppSrv
             'debug_to_screen' => true,
         ),
         'Socket' => array(
-            'listen_address' => '0.0.0.0',
-            'listen_port'    => 30000,
+            'listen_address'        => '0.0.0.0',
+            'listen_port'           => 30000,
+            'ssl'                   => false,
+            'ssl_cafile'            => '/opt/daemons/A2o_AppSrv/ca.pem',
+            'ssl_local_cert'        => '/opt/daemons/A2o_AppSrv/cert.pem',
+            'ssl_passphrase'        => '',
+            'ssl_verify_peer'       => true,
+            'ssl_verify_depth'      => 1,
+            'ssl_allow_self_signed' => false,
+            'ssl_CN_match'          => '*.a2o.si',
         ),
         'Workers' => array(
             'min_workers'      => 2,

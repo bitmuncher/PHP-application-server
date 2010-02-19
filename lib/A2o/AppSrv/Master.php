@@ -173,8 +173,16 @@ class A2o_AppSrv_Master
     	}
 
         $iniSection = 'Socket';
-        $this->_listenAddress     = $ca[$iniSection]['listen_address'];
-        $this->_listenPort        = $ca[$iniSection]['listen_port'];
+        $this->_listenAddress       = $ca[$iniSection]['listen_address'];
+        $this->_listenPort          = $ca[$iniSection]['listen_port'];
+        $this->_ssl                 = $ca[$iniSection]['ssl'];
+        $this->_ssl_cafile          = $ca[$iniSection]['ssl_cafile'];
+        $this->_ssl_localCert       = $ca[$iniSection]['ssl_local_cert'];
+        $this->_ssl_passphrase      = $ca[$iniSection]['ssl_passphrase'];
+        $this->_ssl_verifyPeer      = $ca[$iniSection]['ssl_verify_peer'];
+        $this->_ssl_verifyDepth     = $ca[$iniSection]['ssl_verify_depth'];
+        $this->_ssl_allowSelfSigned = $ca[$iniSection]['ssl_allow_self_signed'];
+        $this->_ssl_cnMatch         = $ca[$iniSection]['ssl_CN_match'];
 
 	$iniSection = 'Workers';
         $this->_mp_minWorkers     = $ca[$iniSection]['min_workers'];
@@ -264,11 +272,30 @@ class A2o_AppSrv_Master
 
 
     /**
-     * Open network socket, bind and listen
+     * Open normal network socket, save it to $this->_listenSocket, bind
+     * and listen
      *
      * @return   void
      */
     private function ___init_socket ()
+    {
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+
+        if ($this->_ssl == true) {
+            $this->___init_socket_ssl();
+        } else {
+            $this->___init_socket_normal();
+        }
+    }
+
+
+
+    /**
+     * Open normal network socket, bind and listen
+     *
+     * @return   void
+     */
+    private function ___init_socket_normal ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 

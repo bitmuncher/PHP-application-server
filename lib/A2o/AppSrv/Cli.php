@@ -280,7 +280,7 @@ class A2o_AppSrv_Cli
         }
 
         // Divide the sections between system and custom
-        $sectionPrefix = $this->_parentClassName .'_';
+        $sectionPrefix = $this->_parentClassName . '_';
         foreach ($iniConfigArray as $sectionName => $sectionData) {
             if (substr($sectionName, 0, strlen($sectionPrefix)) == $sectionPrefix) {
                 // Correct section found
