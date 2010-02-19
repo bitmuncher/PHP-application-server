@@ -38,22 +38,22 @@ class A2o_AppSrv_Log {
     /**
      * Output messages to STDOUT
      */
-	protected $_logToScreen = true;
+    protected $_logToScreen = true;
 
     /**
      * Output messages to logFile
      */
-	protected $_logToFile = false;
+    protected $_logToFile = false;
 
 	/**
      * Log file name
      */
-	protected $_logFile = false;
+    protected $_logFile = false;
 
     /**
      * Log file handle
      */
-	protected $_logFileHandle = false;
+    protected $_logFileHandle = false;
 
 
 
@@ -66,9 +66,9 @@ class A2o_AppSrv_Log {
     public function __construct ($logFile=NULL)
     {
     	if ($logFile !== NULL) {
-    		$this->openLogFile($logFile);
+            $this->openLogFile($logFile);
     	}
-	}
+    }
 
 
 
@@ -80,53 +80,53 @@ class A2o_AppSrv_Log {
     public function __destruct ()
     {
     	$this->closeLogFile();
-	}
+    }
 
 
 
-	/**
+    /**
      * Checks and opens the logfile
      *
      * @param    string   Log file name
      * @return   void
      */
-	public function openLogFile ($logFile)
-	{
-		// File accessibility checks
-		if (file_exists($logFile)) {
-		    if (!is_file($logFile))
-		    	throw new A2o_AppSrv_Exception("Log file is not a regular file: $logFile");
-		    if (!is_writeable($logFile))
-		    	throw new A2o_AppSrv_Exception("Log file is not writeable: $logFile");
-		} else {
-			$logFileDir = dirname($logFile);
-			if (!file_exists($logFileDir))
-				throw new A2o_AppSrv_Exception("Log file directory does not exist: $logFileDir");
-		    if (!is_writeable($logFileDir))
-				throw new A2o_AppSrv_Exception("Log file directory is not writeable: $logFileDir");
-		}
+    public function openLogFile ($logFile)
+    {
+        // File accessibility checks
+        if (file_exists($logFile)) {
+            if (!is_file($logFile))
+                throw new A2o_AppSrv_Exception("Log file is not a regular file: $logFile");
+            if (!is_writeable($logFile))
+                throw new A2o_AppSrv_Exception("Log file is not writeable: $logFile");
+        } else {
+            $logFileDir = dirname($logFile);
+            if (!file_exists($logFileDir))
+                throw new A2o_AppSrv_Exception("Log file directory does not exist: $logFileDir");
+            if (!is_writeable($logFileDir))
+                throw new A2o_AppSrv_Exception("Log file directory is not writeable: $logFileDir");
+        }
 
-		// Open logfile first
-		$r = fopen($logFile, 'a');
-		if ($r === false)
-		    throw new A2o_AppSrv_Exception("Unable to open logfile: $logFile");
-		$logFileHandle = $r;
+        // Open logfile first
+        $r = fopen($logFile, 'a');
+        if ($r === false)
+            throw new A2o_AppSrv_Exception("Unable to open logfile: $logFile");
+        $logFileHandle = $r;
 
-		// Close old logfile if opened
-		if (($this->_logFile !== false) && ($this->_logFileHandle !== false)) {
-			$this->closeLogFile();
-		}
+        // Close old logfile if opened
+        if (($this->_logFile !== false) && ($this->_logFileHandle !== false)) {
+            $this->closeLogFile();
+        }
 
-		// Assign variables
-		$this->_logFile       = $logFile;
-		$this->_logFileHandle = $logFileHandle;
+        // Assign variables
+        $this->_logFile       = $logFile;
+        $this->_logFileHandle = $logFileHandle;
 
-		// Enable file and disable screen logging
-		$this->_logToFile   = true;
-		$this->_logToScreen = false;
+        // Enable file and disable screen logging
+        $this->_logToFile   = true;
+        $this->_logToScreen = false;
 
-		// Assign it - THINK, FIXME
-		//$this->_debug("Using log file: $logFile", 6);
+        // Assign it - THINK, FIXME
+        //$this->_debug("Using log file: $logFile", 6);
     }
 
 
@@ -136,27 +136,27 @@ class A2o_AppSrv_Log {
      *
      * @return   void
      */
-	public function closeLogFile ()
-	{
-		// Enable screen logging
-		$this->_logToScreen = true;
-		$this->_logToFile   = false;
+    public function closeLogFile ()
+    {
+        // Enable screen logging
+        $this->_logToScreen = true;
+        $this->_logToFile   = false;
 
-		// Return if no logfile is opened
-		if (($this->_logFile === false) || ($this->_logFileHandle === false)) {
-			return;
-		}
+        // Return if no logfile is opened
+        if (($this->_logFile === false) || ($this->_logFileHandle === false)) {
+            return;
+        }
 
-		// Close the file
-		$r = fclose($this->_logFileHandle);
-		if ($r === false) {
-	    	throw new A2o_AppSrv_Exception("Unable to close logfile: $this->_logFile");
-		}
+        // Close the file
+        $r = fclose($this->_logFileHandle);
+        if ($r === false) {
+            throw new A2o_AppSrv_Exception("Unable to close logfile: $this->_logFile");
+        }
 
-		// Unset the variables
-	    $this->_logFile       = false;
-		$this->_logFileHandle = false;
-	}
+        // Unset the variables
+        $this->_logFile       = false;
+        $this->_logFileHandle = false;
+    }
 
 
 
@@ -165,9 +165,9 @@ class A2o_AppSrv_Log {
      *
      * @return   void
      */
-	public function enableLogToScreen ()
-	{
-		$this->_logToScreen = true;
+    public function enableLogToScreen ()
+    {
+        $this->_logToScreen = true;
     }
 
 
@@ -177,9 +177,9 @@ class A2o_AppSrv_Log {
      *
      * @return   void
      */
-	protected function _disableLogToScreen ()
-	{
-		$this->_logToScreen = false;
+    protected function _disableLogToScreen ()
+    {
+        $this->_logToScreen = false;
     }
 
 
@@ -191,18 +191,18 @@ class A2o_AppSrv_Log {
      * @return   void
      */
     public function log ($message)
-	{
-		// Format message
-		$messageFinal = date('Y-m-d H:i:s') ." $message\n";
+    {
+        // Format message
+        $messageFinal = date('Y-m-d H:i:s') ." $message\n";
 
-		if ($this->_logToScreen === true) {
-			echo "$messageFinal";
-		}
+        if ($this->_logToScreen === true) {
+            echo "$messageFinal";
+        }
 
-		if ($this->_logToFile === true) {
-			fwrite($this->_logFileHandle, $messageFinal);
-		}
-	}
+        if ($this->_logToFile === true) {
+            fwrite($this->_logFileHandle, $messageFinal);
+        }
+    }
 
 
 
@@ -214,11 +214,11 @@ class A2o_AppSrv_Log {
      */
     public function log_r ($var)
     {
-		ob_start();
-		print_r($var);
-		$contents = ob_get_contents();
-		ob_end_clean();
+        ob_start();
+        print_r($var);
+        $contents = ob_get_contents();
+        ob_end_clean();
 
-		$this->log($contents);
+        $this->log($contents);
     }
 }

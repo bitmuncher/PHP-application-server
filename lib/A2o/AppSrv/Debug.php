@@ -38,12 +38,12 @@ class A2o_AppSrv_Debug {
     /**
      * Parent system
      */
-	protected $_parent = false;
+    protected $_parent = false;
 
     /**
      * Messages with importance number lower or equal to this threshold will get logged/written to output
      */
-	protected $_threshold = 5;
+    protected $_threshold = 5;
 
 
 
@@ -56,7 +56,7 @@ class A2o_AppSrv_Debug {
     public function __construct ($parent)
     {
     	$this->_parent = $parent;
-	}
+    }
 
 
 
@@ -68,7 +68,7 @@ class A2o_AppSrv_Debug {
     public function __destruct ()
     {
     	$this->_parent = NULL;
-	}
+    }
 
 
 
@@ -78,12 +78,12 @@ class A2o_AppSrv_Debug {
      * @param    integer   New threshold level
      * @return   void
      */
-	public function setThreshold ($threshold)
-	{
-		if (!preg_match('/^[1-9]$/', $threshold)) {
-			throw new A2o_AppSrv_Exception("Given threshold is not a number between 1 and 9: $threshold");
-		}
-		$this->_threshold = $threshold;
+    public function setThreshold ($threshold)
+    {
+        if (!preg_match('/^[1-9]$/', $threshold)) {
+            throw new A2o_AppSrv_Exception("Given threshold is not a number between 1 and 9: $threshold");
+        }
+        $this->_threshold = $threshold;
     }
 
 
@@ -96,12 +96,12 @@ class A2o_AppSrv_Debug {
      * @return   void
      */
     public function debug ($message, $importanceLevel=5)
-	{
-    	// echo __CLASS__ .'::'. __FUNCTION__ ." il=$importanceLevel th=$this->_threshold\n";
-		if ($importanceLevel <= $this->_threshold) {
-			$this->_parent->__log($message);
-		}
-	}
+    {
+        // echo __CLASS__ .'::'. __FUNCTION__ ." il=$importanceLevel th=$this->_threshold\n";
+        if ($importanceLevel <= $this->_threshold) {
+            $this->_parent->__log($message);
+        }
+    }
 
 
 
@@ -116,7 +116,7 @@ class A2o_AppSrv_Debug {
     {
     	// echo __CLASS__ .'::'. __FUNCTION__ ." il=$importanceLevel th=$this->_threshold\n";
     	if ($importanceLevel <= $this->_threshold) {
-    		$this->_parent->__log_r($var);
-		}
+            $this->_parent->__log_r($var);
+        }
     }
 }

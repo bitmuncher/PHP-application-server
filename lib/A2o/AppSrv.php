@@ -39,7 +39,7 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.3.2';
+    const version = '0.3.3alpha';
 
     /**
      * Subsystem class names
@@ -99,50 +99,50 @@ class A2o_AppSrv
     /**
      * Configuration data arrays
      */
-	public  $__configArray        = array();   // Merged together, for "public" access
-	private $_configArray_cli     = array();   // From command line arguments
-	private $_configArray_ini     = array();   // From ini file or ini array passed to constructor
-	private $_configArray_default = array(     // Defaults
-		'Daemon' => array(
-			'executable_name' => 'A2o_AppSrv',
-			'work_dir'        => '/opt/daemons/A2o_AppSrv',
-			'pid_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.pid',
-			'user'            => 'nobody',
-			'group'           => 'nogroup',
-		),
-		'Logging' => array(
-			'log_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.log',
-			'debug_level'     => 5,
-			'debug_to_screen' => true,
-		),
-		'Socket' => array(
-			'listen_address' => '0.0.0.0',
-			'listen_port'    => 30000,
-		),
-		'Workers' => array(
-			'min_workers'      => 2,
-			'min_idle_workers' => 1,
-			'max_idle_workers' => 2,
-			'max_workers'      => 10,
-		),
-		'Clients' => array(
-			'allowed_ips_regex' => '[0-9]+.[0-9]+.[0-9]+.[0-9]+',
-			'client_type'       => 'Http',
-			'client_class_name' => 'A2o_AppSrv_Client_Http',
-		),
-	);
+    public  $__configArray        = array();   // Merged together, for "public" access
+    private $_configArray_cli     = array();   // From command line arguments
+    private $_configArray_ini     = array();   // From ini file or ini array passed to constructor
+    private $_configArray_default = array(     // Defaults
+        'Daemon' => array(
+            'executable_name' => 'A2o_AppSrv',
+            'work_dir'        => '/opt/daemons/A2o_AppSrv',
+            'pid_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.pid',
+            'user'            => 'nobody',
+            'group'           => 'nogroup',
+        ),
+        'Logging' => array(
+            'log_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.log',
+            'debug_level'     => 5,
+            'debug_to_screen' => true,
+        ),
+        'Socket' => array(
+            'listen_address' => '0.0.0.0',
+            'listen_port'    => 30000,
+        ),
+        'Workers' => array(
+            'min_workers'      => 2,
+            'min_idle_workers' => 1,
+            'max_idle_workers' => 2,
+            'max_workers'      => 10,
+        ),
+        'Clients' => array(
+            'allowed_ips_regex' => '[0-9]+.[0-9]+.[0-9]+.[0-9]+',
+            'client_type'       => 'Http',
+            'client_class_name' => 'A2o_AppSrv_Client_Http',
+        ),
+    );
 
-	/**
-	 * Custom configuration options read from ini file - a.k.a. unrecognised sections
-	 */
-	public $__configArray_custom = false;
+    /**
+     * Custom configuration options read from ini file - a.k.a. unrecognised sections
+     */
+    public $__configArray_custom = false;
 
 
 
-	/**
-	 * Signal handling - is something currently processing?
-	 * Signal handling - stack of deferred signals
-	 */
+    /**
+     * Signal handling - is something currently processing?
+     * Signal handling - stack of deferred signals
+     */
     protected $___sh_isProcessing    = false;
     protected $___sh_deferredSignals = array();
 
@@ -193,13 +193,13 @@ class A2o_AppSrv
      * @return   void
      */
     public function run ()
-	{
-		// Start logging and debugging subsystems
-		$this->_log   = new A2o_AppSrv_Log();
-		$this->_debug = new A2o_AppSrv_Debug($this);
+    {
+        // Start logging and debugging subsystems
+        $this->_log   = new A2o_AppSrv_Log();
+        $this->_debug = new A2o_AppSrv_Debug($this);
 
-		// Start the CLI subsystem which parses the command line arguments and .ini file
-		$this->_cli = new $this->_className_cli($this, $this->_className, $this->___tmp_ini, $this->___tmp_parseCliArgs);
+        // Start the CLI subsystem which parses the command line arguments and .ini file
+        $this->_cli = new $this->_className_cli($this, $this->_className, $this->___tmp_ini, $this->___tmp_parseCliArgs);
     	$this->_cli->__run();
 
     	// Get the settings
@@ -215,7 +215,7 @@ class A2o_AppSrv
     	$this->___configArray_apply();
 
     	// Start the master process
-		$this->_master = new $this->_className_master($this, $this->_className);
+	$this->_master = new $this->_className_master($this, $this->_className);
     	$this->_master->__run();
 
     	// If master process returns from run() method, this means it has forked itself and this is a child now
@@ -261,8 +261,8 @@ class A2o_AppSrv
     	// Set debugging options
     	$this->_debug->setThreshold($this->__configArray['Logging']['debug_level']);
     	if ($this->__configArray['Logging']['debug_to_screen']) {
-    		$this->_log->enableLogToScreen();
-    		$this->_log->closeLogFile();
+            $this->_log->enableLogToScreen();
+            $this->_log->closeLogFile();
     	}
 
     	// Debug the array
@@ -282,13 +282,13 @@ class A2o_AppSrv
     {
     	// FIXME for PHP 5.3 replace with array_replace_recursive
     	foreach ($arr1 as $secName1 => $secData1) {
-    		foreach ($secData1 as $secName2 => $secData2) {
-    			if (isset($arr3[$secName1][$secName2])) {
-    				$arr1[$secName1][$secName2] = $arr3[$secName1][$secName2];
-    			} elseif (isset($arr2[$secName1][$secName2])) {
-    				$arr1[$secName1][$secName2] = $arr2[$secName1][$secName2];
-    			}
-    		}
+            foreach ($secData1 as $secName2 => $secData2) {
+                if (isset($arr3[$secName1][$secName2])) {
+                    $arr1[$secName1][$secName2] = $arr3[$secName1][$secName2];
+                } elseif (isset($arr2[$secName1][$secName2])) {
+                    $arr1[$secName1][$secName2] = $arr2[$secName1][$secName2];
+                }
+            }
     	}
     	return $arr1;
     }
@@ -302,9 +302,9 @@ class A2o_AppSrv
      */
     public function __registerMe_asCli ()
     {
-		$this->_whoAmI     = 'cli';
-		$this->_whoAmI_log = 'CLI';
-		$this->_whoAmI_pid = getmypid();
+        $this->_whoAmI     = 'cli';
+        $this->_whoAmI_log = 'CLI';
+        $this->_whoAmI_pid = getmypid();
     }
 
 
@@ -316,10 +316,10 @@ class A2o_AppSrv
      */
     public function __registerMe_asMaster ()
     {
-		$this->_whoAmI     = 'master';
-		$this->_whoAmI_log = 'MASTER';
-		$this->_whoAmI_pid = getmypid();
-		$this->__masterPid = $this->_whoAmI_pid;
+        $this->_whoAmI     = 'master';
+        $this->_whoAmI_log = 'MASTER';
+        $this->_whoAmI_pid = getmypid();
+        $this->__masterPid = $this->_whoAmI_pid;
     }
 
 
@@ -331,9 +331,9 @@ class A2o_AppSrv
      */
     public function __registerMe_asWorker ()
     {
-		$this->_whoAmI     = 'worker';
-		$this->_whoAmI_log = 'worker';
-		$this->_whoAmI_pid = getmypid();
+        $this->_whoAmI     = 'worker';
+        $this->_whoAmI_log = 'worker';
+        $this->_whoAmI_pid = getmypid();
     }
 
 
@@ -346,7 +346,7 @@ class A2o_AppSrv
      */
     public function __log ($message)
     {
-		$messageFinal = "$this->_whoAmI_log (pid=$this->_whoAmI_pid): $message";
+	$messageFinal = "$this->_whoAmI_log (pid=$this->_whoAmI_pid): $message";
     	$this->_log->log($messageFinal);
     }
 
@@ -360,10 +360,10 @@ class A2o_AppSrv
      */
     public function __log_r ($var)
     {
-		ob_start();
-		print_r($var);
-		$contents = ob_get_contents();
-		ob_end_clean();
+        ob_start();
+        print_r($var);
+        $contents = ob_get_contents();
+        ob_end_clean();
 
     	$this->__log($contents);
     }
@@ -379,7 +379,7 @@ class A2o_AppSrv
      */
     public function __debug ($message, $importanceLevel=5)
     {
-		$messageFinal =& $message;
+	$messageFinal =& $message;
     	$this->_debug->debug($messageFinal, $importanceLevel);
     }
 
@@ -394,10 +394,10 @@ class A2o_AppSrv
      */
     public function __debug_r ($var, $importanceLevel=5)
     {
-		ob_start();
-		print_r($var);
-		$contents = ob_get_contents();
-		ob_end_clean();
+        ob_start();
+        print_r($var);
+        $contents = ob_get_contents();
+        ob_end_clean();
 
     	$this->__debug($contents, $importanceLevel);
     }
@@ -413,7 +413,7 @@ class A2o_AppSrv
      */
     public function __warning ($message)
     {
-		$messageFinal = "WARNING: $message";
+        $messageFinal = "WARNING: $message";
     	$this->__log($messageFinal, $importanceLevel);
     }
 
@@ -445,15 +445,15 @@ class A2o_AppSrv
      */
     public function __init_signalHandler ()
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		declare (ticks = 1);
-		pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));   // To exit
-		pcntl_signal(SIGCHLD, array(&$this, 'signalHandler'));   // Child exited or died
-		pcntl_signal(SIGUSR1, array(&$this, 'signalHandler'));   // Child waiting for IPC
-	    pcntl_signal(SIGINT,  array(&$this, 'signalHandler'));   // Ctrl+C
+        declare (ticks = 1);
+        pcntl_signal(SIGTERM, array(&$this, 'signalHandler'));   // To exit
+        pcntl_signal(SIGCHLD, array(&$this, 'signalHandler'));   // Child exited or died
+        pcntl_signal(SIGUSR1, array(&$this, 'signalHandler'));   // Child waiting for IPC
+        pcntl_signal(SIGINT,  array(&$this, 'signalHandler'));   // Ctrl+C
 
-		$this->__debug("Signal handlers installed");
+        $this->__debug("Signal handlers installed");
     }
 
 
@@ -464,37 +464,37 @@ class A2o_AppSrv
      */
     public function signalHandler ($signo)
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
 
-		// If we are just processing some other interrupt, store this interrupt in the array
-		if ($this->___sh_isProcessing() == true) {
-		    $this->___sh_addDeferredSignal($signo);
-		    return;
-		}
+        // If we are just processing some other interrupt, store this interrupt in the array
+        if ($this->___sh_isProcessing() == true) {
+            $this->___sh_addDeferredSignal($signo);
+            return;
+        }
 
-		// Notify that we are processing the interrupt currently
-		$this->___sh_setFlag_processing();
+        // Notify that we are processing the interrupt currently
+        $this->___sh_setFlag_processing();
 
-		// Let us process the signal now
-		switch ($this->_whoAmI) {
-			case 'cli':
-				$this->_cli->__signalHandler($signo);
-				break;
-			case 'master':
-				$this->_master->__signalHandler($signo);
-				break;
-			case 'worker':
-				$this->_worker->__signalHandler($signo);
-				break;
-		}
+        // Let us process the signal now
+        switch ($this->_whoAmI) {
+            case 'cli':
+                $this->_cli->__signalHandler($signo);
+                break;
+            case 'master':
+                $this->_master->__signalHandler($signo);
+                break;
+            case 'worker':
+                $this->_worker->__signalHandler($signo);
+                break;
+        }
 
-		// Notify that we have finished
-		$this->___sh_unsetFlag_processing();
+        // Notify that we have finished
+        $this->___sh_unsetFlag_processing();
 
-		// Process deferred signal - warning - recursion
-		$signo = $this->___sh_getOneDeferredSignal();
-		if ($signo !== false) {
-			$this->signalHandler($signo);
+        // Process deferred signal - warning - recursion
+        $signo = $this->___sh_getOneDeferredSignal();
+        if ($signo !== false) {
+            $this->signalHandler($signo);
     	}
     }
 
@@ -507,8 +507,8 @@ class A2o_AppSrv
      */
     private function ___sh_isProcessing ()
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
-		return $this->___sh_isProcessing;
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        return $this->___sh_isProcessing;
     }
 
 
@@ -518,10 +518,10 @@ class A2o_AppSrv
      *
      * @return   void
      */
-   	private function ___sh_setFlag_processing ()
+    private function ___sh_setFlag_processing ()
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
-		$this->___sh_isProcessing = true;
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->___sh_isProcessing = true;
     }
 
 
@@ -533,7 +533,7 @@ class A2o_AppSrv
      */
     private function ___sh_unsetFlag_processing ()
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
     	$this->___sh_isProcessing = false;
     }
 
@@ -546,7 +546,7 @@ class A2o_AppSrv
      */
     private function ___sh_addDeferredSignal ($signo)
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
     	array_push($this->___sh_deferredSignals, $signo);
     }
 
@@ -559,18 +559,17 @@ class A2o_AppSrv
      */
     private function ___sh_getOneDeferredSignal ()
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// If deferred signal is pending, shift one from the beginning of the array
-		if (count($this->___sh_deferredSignals) > 0) {
-	    	$signo = array_shift($this->___sh_deferredSignals);
-	    	return $signo;
-		}
+        // If deferred signal is pending, shift one from the beginning of the array
+        if (count($this->___sh_deferredSignals) > 0) {
+        $signo = array_shift($this->___sh_deferredSignals);
+        return $signo;
+        }
 
-		// No deferred signal pending
-		return false;
+        // No deferred signal pending
+        return false;
     }
-
 
 
 
@@ -582,68 +581,72 @@ class A2o_AppSrv
      */
     private function __setProcStatus ($newProcStatus)
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// sanity check
-		$this->__debug_r($this->_availableProcStatuses);
-		if (!isset($this->_availableProcStatuses[$newProcStatus]))
-		    $this->__error("Invalid new process status: $newProcStatus");
-		if ($newProcStatus == 'init')
-		    $this->__error("Cannot re-enter inititialization phase, newProcStatus=$newProcStatus");
+        // sanity check
+        $this->__debug_r($this->_availableProcStatuses);
+        if (!isset($this->_availableProcStatuses[$newProcStatus]))
+            $this->__error("Invalid new process status: $newProcStatus");
+        if ($newProcStatus == 'init')
+            $this->__error("Cannot re-enter inititialization phase, newProcStatus=$newProcStatus");
 
-		// deny setting new process status if in exiting mode
-		if ($this->___procStatus == 'exiting') {
-			return false;
-		}
+        // deny setting new process status if in exiting mode
+        if ($this->___procStatus == 'exiting') {
+            return false;
+        }
 
-		// If currently working
-		if ($this->___procStatus == 'working') {
-		    if ($newProcStatus == 'idle') {
-				if ($this->___nextProcStatus == 'exiting') {
-				    $this->___procStatus = 'exiting';
-				    $this->__exit();
-			} else {
-			    if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusIdle();
-			    $this->_procStatus = 'idle';
-			    return true;
-			}
-		    }
-		    if ($newProcStatus == 'exiting') {
-			$this->_nextProcStatus = 'exiting';
-			return false;
-		    }
-		    throw new A2o_AppSrv_Exception('Forbidden place in program execution');
-		}
+        // If currently working
+        if ($this->___procStatus == 'working') {
+            if ($newProcStatus == 'idle') {
+                if ($this->___nextProcStatus == 'exiting') {
+                    $this->___procStatus = 'exiting';
+                    $this->__exit();
+                } else {
+                    if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusIdle();
+                    $this->_procStatus = 'idle';
+                    return true;
+                }
+            }
+            if ($newProcStatus == 'exiting') {
+                $this->_nextProcStatus = 'exiting';
+                return false;
+            }
+            throw new A2o_AppSrv_Exception('Forbidden place in program execution');
+        }
 
-		// If currently idle, allow any new status
-		if ($this->_procStatus == 'idle') {
-		    if ($this->_nextProcStatus == 'exiting') {
-			$this->_procStatus = 'exiting';
-			$this->_exit();
-		    }
-		    if ($newProcStatus == 'exiting') {
-			$this->_procStatus = 'exiting';
-			$this->_exit();
-		    }
-		    if ($newProcStatus == 'working') {
-			if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusWorking();
-			$this->_procStatus = 'working';
-			return true;
-		    }
-		    throw new A2o_AppSrv_Exception('Forbidden place in program execution');
-		}
+        // If currently idle, allow any new status
+        if ($this->_procStatus == 'idle') {
+            if ($this->_nextProcStatus == 'exiting') {
+                $this->_procStatus = 'exiting';
+                $this->_exit();
+            }
+            if ($newProcStatus == 'exiting') {
+                $this->_procStatus = 'exiting';
+                $this->_exit();
+            }
+            if ($newProcStatus == 'working') {
+                if ($this->_whoAmI == 'worker') $this->_ipc_tellMaster_statusWorking();
+                $this->_procStatus = 'working';
+                return true;
+            }
+            throw new A2o_AppSrv_Exception('Forbidden place in program execution');
+        }
 
-		// If currently initializing, allow only to idle
-		if ($this->_procStatus == 'init') {
-		    if ($newProcStatus == 'idle') {
-			$this->_procStatus = 'idle';
-			return true;
-		    } else {
-			return false;
-		    }
-		}
-		throw new A2o_AppSrv_Exception('Forbidden place in program execution');
+        // If currently initializing, allow only to idle
+        if ($this->_procStatus == 'init') {
+            if ($newProcStatus == 'idle') {
+                $this->_procStatus = 'idle';
+                return true;
+            } else {
+                return false;
+            }
+        }
+        throw new A2o_AppSrv_Exception('Forbidden place in program execution');
     }
+
+
+
+
 
     /**************************************************************************\
     |
@@ -833,7 +836,7 @@ class A2o_AppSrv
     |
     \**************************************************************************/
     /**
-     * _exit
+     * __exit
      *
      * Call appropriate exit method, depending on the context (cli|master|worker)
      *
@@ -841,31 +844,31 @@ class A2o_AppSrv
      */
     public function __exit ($exitStatus=0)
     {
-		$this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		switch ($this->_whoAmI) {
-			case 'cli':
-				$this->_cli->__exit($exitStatus);
-				break;
-			case 'master':
-				$this->_master->__exit($exitStatus);
-				break;
-			case 'worker':
-				$this->_worker->__exit($exitStatus);
-				break;
-			default:
-		    	throw new A2o_AppSrv_Exception("Unknown _whoAmI: $this->_whoAmI");
-		}
+        switch ($this->_whoAmI) {
+            case 'cli':
+                $this->_cli->__exit($exitStatus);
+                break;
+            case 'master':
+                $this->_master->__exit($exitStatus);
+                break;
+            case 'worker':
+                $this->_worker->__exit($exitStatus);
+                break;
+            default:
+            throw new A2o_AppSrv_Exception("Unknown _whoAmI: $this->_whoAmI");
+        }
 
-		// Close the logfile
-		$this->__debug('Closing logfile and exiting...');
-		if (($this->_whoAmI == 'cli') || ($this->_whoAmI == 'master')) {
-			$this->__log("Shutdown complete (less logfile which will close now).");
-			$this->__debug('--');
-		}
-		$this->_log->closeLogFile();
+        // Close the logfile
+        $this->__debug('Closing logfile and exiting...');
+        if (($this->_whoAmI == 'cli') || ($this->_whoAmI == 'master')) {
+            $this->__log("Shutdown complete (less logfile which will close now).");
+            $this->__debug('--');
+        }
+        $this->_log->closeLogFile();
 
-		// Do exit now
-		exit($exitStatus);
+        // Do exit now
+        exit($exitStatus);
     }
 }

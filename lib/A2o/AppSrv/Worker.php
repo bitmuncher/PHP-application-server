@@ -70,13 +70,13 @@ class A2o_AppSrv_Worker
     /**
      * Client details
      */
-	protected $_client_allowedIpsRegex = '.*';
-	protected $_client_type            = 'Http';
-	protected $_client_className       = 'A2o_AppSrv_Client_Http';
+    protected $_client_allowedIpsRegex = '.*';
+    protected $_client_type            = 'Http';
+    protected $_client_className       = 'A2o_AppSrv_Client_Http';
 
-	/**
-	 * Connected client details
-	 */
+    /**
+     * Connected client details
+     */
     protected $_client_socket          = false;
     protected $_client_address         = false;
     protected $_client_port            = false;
@@ -98,9 +98,9 @@ class A2o_AppSrv_Worker
     public function __construct ($parent, $parentClassName)
     {
     	$this->_parent          = $parent;
-		$this->_parentClassName = $parentClassName;
+        $this->_parentClassName = $parentClassName;
 
-		$this->___configArray        =& $this->_parent->__configArray;
+        $this->___configArray        =& $this->_parent->__configArray;
     	$this->___configArray_custom =& $this->_parent->__configArray_custom;
 
     	$this->_masterPid =& $this->_parent->__masterPid;
@@ -117,7 +117,7 @@ class A2o_AppSrv_Worker
      */
     public function __setSockets ($listenSocket, $masterSocket_read, $masterSocket_write)
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	$this->_listenSocket       = $listenSocket;
     	$this->___masterSocket_read  = $masterSocket_read;
@@ -133,16 +133,16 @@ class A2o_AppSrv_Worker
      */
     public function __run ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	// First merge the config with internal variables
-		$this->___configArray_apply();
+        $this->___configArray_apply();
 
-		// Execute worker initialization
-		$this->___init();
+        // Execute worker initialization
+        $this->___init();
 
-		// Start running the worker process
-		$this->___run();
+        // Start running the worker process
+        $this->___run();
     }
 
 
@@ -154,15 +154,15 @@ class A2o_AppSrv_Worker
      */
     private function ___configArray_apply ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		$ca =& $this->___configArray;
+        $ca =& $this->___configArray;
 
-		// Parse through sections
-	    $iniSection = 'Clients';
-	    $this->_client_allowedIpsRegex = $ca[$iniSection]['allowed_ips_regex'];
-	    $this->_client_type            = $ca[$iniSection]['client_type'];
-	    $this->_client_className       = $ca[$iniSection]['client_class_name'];
+        // Parse through sections
+        $iniSection = 'Clients';
+        $this->_client_allowedIpsRegex = $ca[$iniSection]['allowed_ips_regex'];
+        $this->_client_type            = $ca[$iniSection]['client_type'];
+        $this->_client_className       = $ca[$iniSection]['client_class_name'];
     }
 
 
@@ -174,19 +174,19 @@ class A2o_AppSrv_Worker
      */
     private function ___init ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// If exists, call custom pre-initialization method
-		if (is_callable(array($this, 'preInit'))) $this->preInit();
+        // If exists, call custom pre-initialization method
+        if (is_callable(array($this, 'preInit'))) $this->preInit();
 
-		// Then proceed with initialization
-		$this->___init_listenSocket();
-		$this->___init_signalHandler();
+        // Then proceed with initialization
+        $this->___init_listenSocket();
+        $this->___init_signalHandler();
 
-		// If exists, call custom initialization method
-		if (is_callable(array($this, 'init'))) $this->init();
+        // If exists, call custom initialization method
+        if (is_callable(array($this, 'init'))) $this->init();
 
-		$this->_debug('Initialization complete');
+        $this->_debug('Initialization complete');
     }
 
 
@@ -198,12 +198,12 @@ class A2o_AppSrv_Worker
      */
     private function ___init_listenSocket ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Set the socket to non-blocking
-		socket_set_nonblock($this->_listenSocket);
+        // Set the socket to non-blocking
+        socket_set_nonblock($this->_listenSocket);
 
-		$this->_debug('Listening socket initialization complete');
+        $this->_debug('Listening socket initialization complete');
     }
 
 
@@ -215,9 +215,9 @@ class A2o_AppSrv_Worker
      */
     private function ___init_signalHandler ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		$this->_parent->__init_signalHandler();
+        $this->_parent->__init_signalHandler();
     }
 
 
@@ -229,29 +229,29 @@ class A2o_AppSrv_Worker
      */
     private function ___run ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// If we have just entered this method, this means
-		// that initialization phase is complete and we are idle
-		//$this->_setStatus('idle');
+        // If we have just entered this method, this means
+        // that initialization phase is complete and we are idle
+        //$this->_setStatus('idle');
 
-		// Enter the main loop
-		do {
-		    // Accept connection - if there is such thing waiting at the door
-		    if (!$this->___getNewConnection()) {
-				//$this->_debug("No client waiting, sleeping");
-				usleep(500000);
-				continue;
-		    }
+        // Enter the main loop
+        do {
+            // Accept connection - if there is such thing waiting at the door
+            if (!$this->___getNewConnection()) {
+                //$this->_debug("No client waiting, sleeping");
+                usleep(500000);
+                continue;
+            }
 
-		    //$this->_setStatus('working');
+            //$this->_setStatus('working');
 
-		    $this->handleConnection($this->_client_socket, $this->_client_address, $this->_client_port);
+            $this->handleConnection($this->_client_socket, $this->_client_address, $this->_client_port);
 
-		    //$this->_setStatus('idle'); // FIXME
-		} while (true);
+            //$this->_setStatus('idle'); // FIXME
+        } while (true);
 
-		throw new A2o_AppSrv_Exception("Reached the forbidden execution branch");
+        throw new A2o_AppSrv_Exception("Reached the forbidden execution branch");
     }
 
 
@@ -264,26 +264,26 @@ class A2o_AppSrv_Worker
      */
     private function ___getNewConnection ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Check if any client is waiting for connection
-		$r = @socket_accept($this->_listenSocket);
-		if (($r === false) && (@socket_last_error($this->_listenSocket) === 0)) {
-		    return false;
-		}
+        // Check if any client is waiting for connection
+        $r = @socket_accept($this->_listenSocket);
+        if (($r === false) && (@socket_last_error($this->_listenSocket) === 0)) {
+            return false;
+        }
 
-		// Accept the connection
-		if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_listenSocket)));
-		$this->_client_socket = $r;
+        // Accept the connection
+        if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_listenSocket)));
+        $this->_client_socket = $r;
 
-		// Get remote IP and port
-		$r = socket_getpeername($this->_client_socket, $this->_client_address, $this->_client_port);
-		if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_client_socket)));
+        // Get remote IP and port
+        $r = socket_getpeername($this->_client_socket, $this->_client_address, $this->_client_port);
+        if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_client_socket)));
 
-		// Log the connection
-		$this->_log("Client connected - $this->_client_address:$this->_client_port");
+        // Log the connection
+        $this->_log("Client connected - $this->_client_address:$this->_client_port");
 
-		return true;
+        return true;
     }
 
 
@@ -297,28 +297,28 @@ class A2o_AppSrv_Worker
      */
     protected function handleConnection ($socket, $address, $port)
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Check if client address matches the regex
-		if (!$this->isClientAllowed($address, $port)) {
-			// Signal error to client
-			$client = new A2o_AppSrv_Client_Generic($this->_parent, $socket, $address, $port);
-			$client->writeError("Client not allowed: $address\n");
+        // Check if client address matches the regex
+        if (!$this->isClientAllowed($address, $port)) {
+            // Signal error to client
+            $client = new A2o_AppSrv_Client_Generic($this->_parent, $socket, $address, $port);
+            $client->writeError("Client not allowed: $address\n");
 
-			// Make a log entry and close the connection
-			$this->_log("Client not allowed: $address");
-			$this->closeConnection();
-			return;
-		}
+            // Make a log entry and close the connection
+            $this->_log("Client not allowed: $address");
+            $this->closeConnection();
+            return;
+        }
 
-		// Create new client instance
-		$client = new $this->_client_className($this->_parent, $socket, $address, $port);
+        // Create new client instance
+        $client = new $this->_client_className($this->_parent, $socket, $address, $port);
 
-		// Save the client object
-		$this->_client = $client;
+        // Save the client object
+        $this->_client = $client;
 
-		// Deledate the client handling to another method
-		$this->handleClient($client);
+        // Deledate the client handling to another method
+        $this->handleClient($client);
     }
 
 
@@ -330,18 +330,18 @@ class A2o_AppSrv_Worker
      */
     private function isClientAllowed ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Construct final regex
-		$regex = "/^$this->_client_allowedIpsRegex$/";
-		$this->_debug("Allowed clients regex: $regex");
+        // Construct final regex
+        $regex = "/^$this->_client_allowedIpsRegex$/";
+        $this->_debug("Allowed clients regex: $regex");
 
-		// Check client
-		if (preg_match($regex, $this->_client_address)) {
-		    return true;
-		} else {
-		    return false;
-		}
+        // Check client
+        if (preg_match($regex, $this->_client_address)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
@@ -380,21 +380,21 @@ class A2o_AppSrv_Worker
      */
     protected function closeConnection ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Close the connection to client
-		if ($this->_client !== false) {
-			$this->_client->closeConnection();
-			$this->_client = false;
-		}
+        // Close the connection to client
+        if ($this->_client !== false) {
+            $this->_client->closeConnection();
+            $this->_client = false;
+        }
 
-		// Unset all the variables
-		$this->_client_socket  = false;
-		$this->_client_sddress = false;
-		$this->_client_port    = false;
+        // Unset all the variables
+        $this->_client_socket  = false;
+        $this->_client_sddress = false;
+        $this->_client_port    = false;
 
-		$this->_log("Client disconnected");
-		return true;
+        $this->_log("Client disconnected");
+        return true;
     }
     /**************************************************************************\
     |
@@ -414,24 +414,24 @@ class A2o_AppSrv_Worker
      */
     public function __signalHandler ($signo)
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ ."($signo)", 9);
 
-		switch ($signo) {
-		    case SIGUSR1:
-				$this->_debug("Caught SIGUSR1, reading master for IPC message(s?)...");
-				$this->_ipc_readMaster();
-			break;
-			    case SIGTERM:
-				$this->_debug("Caught SIGTERM, running shutdown method...");
-				$this->_parent->__exit();
-			break;
-			    case SIGCHLD:
-			    case SIGINT:
-				break;
-		    default:
-				$this->_debug("Caught unknown signal $signo, running shitdown method...");
-				$this->_exit();
-		}
+        switch ($signo) {
+            case SIGUSR1:
+                $this->_debug("Caught SIGUSR1, reading master for IPC message(s?)...");
+                $this->_ipc_readMaster();
+                break;
+            case SIGTERM:
+                $this->_debug("Caught SIGTERM, running shutdown method...");
+                $this->_parent->__exit();
+                break;
+            case SIGCHLD:
+            case SIGINT:
+                break;
+            default:
+                $this->_debug("Caught unknown signal $signo, running shitdown method...");
+                $this->_exit();
+        }
     }
 
 
@@ -452,13 +452,13 @@ class A2o_AppSrv_Worker
      */
     private function _ipc_readMaster ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
 
         $msg = socket_read($this->___masterSocket_read, 256);
-		$msg = trim($msg);
-		if ($msg != '') {
-	    	$this->_debug("Received message from master: $msg", 8);
-		}
+        $msg = trim($msg);
+        if ($msg != '') {
+            $this->_debug("Received message from master: $msg", 8);
+        }
 
         // If no message is received
         if ($msg == '') continue;
@@ -466,8 +466,8 @@ class A2o_AppSrv_Worker
         if (preg_match('/^system::setWorkerId::([0-9]+)$/', $msg, $matches)) {
     	    $this->_wp_workerId = $matches[1];
         } else {
-	    	throw new A2o_AppSrv_Exception("Unknown IPC message from master: $msg");
-		}
+	    throw new A2o_AppSrv_Exception("Unknown IPC message from master: $msg");
+	}
     }
 
 
@@ -479,10 +479,10 @@ class A2o_AppSrv_Worker
      */
     private function _ipc_tellMaster_statusWorking ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
 
-		$ipcMessage = "system::myStatus::working";
-		$this->_ipc_tellMaster($ipcMessage);
+        $ipcMessage = "system::myStatus::working";
+        $this->_ipc_tellMaster($ipcMessage);
     }
 
 
@@ -494,10 +494,10 @@ class A2o_AppSrv_Worker
      */
     private function _ipc_tellMaster_statusIdle ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
 
-		$ipcMessage = "system::myStatus::idle";
-		$this->_ipc_tellMaster($ipcMessage);
+        $ipcMessage = "system::myStatus::idle";
+        $this->_ipc_tellMaster($ipcMessage);
     }
 
 
@@ -510,10 +510,10 @@ class A2o_AppSrv_Worker
      */
     private function _ipc_tellMaster ($ipcMessage)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
 
-		$ipcMessage .= "\n";
-		$this->_ipc_tellMasterRaw($ipcMessage);
+        $ipcMessage .= "\n";
+        $this->_ipc_tellMasterRaw($ipcMessage);
     }
 
 
@@ -526,12 +526,12 @@ class A2o_AppSrv_Worker
      */
     private function _ipc_tellMasterRaw ($rawIpcMessage)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ .'()', 9);
 
-		$r = socket_write($this->___masterSocket_write, $rawIpcMessage, strlen($rawIpcMessage));
-		if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->___masterSocket_write)));
+        $r = socket_write($this->___masterSocket_write, $rawIpcMessage, strlen($rawIpcMessage));
+        if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->___masterSocket_write)));
 
-		posix_kill($this->_masterPid, SIGUSR1);
+        posix_kill($this->_masterPid, SIGUSR1);
     }
 
 
@@ -543,19 +543,19 @@ class A2o_AppSrv_Worker
      */
     public function __exit ()
     {
-		$this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-		// Close the listening socket
-		socket_close($this->_listenSocket);
+        // Close the listening socket
+        socket_close($this->_listenSocket);
 
-		// Close the client socket if there is any client active
-		if (is_resource($this->_client_socket)) {
-		    socket_close($this->_client_socket);
-		}
+        // Close the client socket if there is any client active
+        if (is_resource($this->_client_socket)) {
+            socket_close($this->_client_socket);
+        }
 
-		// Close the IPC sockets
-		socket_close($this->___masterSocket_read);
-		socket_close($this->___masterSocket_write);
+        // Close the IPC sockets
+        socket_close($this->___masterSocket_read);
+        socket_close($this->___masterSocket_write);
     }
 
 
