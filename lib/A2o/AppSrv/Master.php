@@ -70,9 +70,19 @@ class A2o_AppSrv_Master
     /**
      * From configArray (ini file): Socket
      */
-    protected $_listenAddress   = '0.0.0.0';
-    protected $_listenPort      = 30000;
-    protected $_listenSocket    = false;
+    protected $_listenAddress       = '0.0.0.0';
+    protected $_listenPort          = 30000;
+    protected $_listenStream        = false;
+    protected $_listenStreamContext = false;
+
+    protected $_ssl                 = false;
+    protected $_ssl_cafile          = '/opt/daemons/A2o_AppSrv/ca.pem';
+    protected $_ssl_localCert       = '/opt/daemons/A2o_AppSrv/cert.pem';
+    protected $_ssl_passphrase      = '';
+    protected $_ssl_verifyPeer      = true;
+    protected $_ssl_verifyDepth     = 1;
+    protected $_ssl_allowSelfSigned = false;
+    protected $_ssl_cnMatch         = '*.a2o.si';
 
     /**
      * From configArray (ini file): Workers
@@ -102,7 +112,7 @@ class A2o_AppSrv_Master
     /**
      * Temporary variables for master->worker transition
      */
-    public $__tmp_listenSocket       = false;
+    public $__tmp_listenStream       = false;
     public $__tmp_masterSocket_read  = false;
     public $__tmp_masterSocket_write = false;
 
@@ -241,7 +251,7 @@ class A2o_AppSrv_Master
 
         // Then proceed with initialization
         $this->___init_php();
-        $this->___init_socket();
+        $this->___init_stream();
         $this->___init_userGroup();
         $this->___init_workDir();
         $this->___init_pidFile();
@@ -272,48 +282,99 @@ class A2o_AppSrv_Master
 
 
     /**
-     * Open normal network socket, save it to $this->_listenSocket, bind
+     * Open network listening stream, save it to $this->_listenStream, bind
      * and listen
      *
      * @return   void
      */
-    private function ___init_socket ()
+    private function ___init_stream ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        if ($this->_ssl == true) {
-            $this->___init_socket_ssl();
+        if ($this->_ssl == false) {
+            $this->___init_stream_normal();
         } else {
-            $this->___init_socket_normal();
+            $this->___init_stream_ssl();
         }
     }
 
 
 
     /**
-     * Open normal network socket, bind and listen
+     * Open normal network stream, bind and listen
      *
      * @return   void
      */
-    private function ___init_socket_normal ()
+    private function ___init_stream_normal ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        // Initialize listening socket
-        $r = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if ($r === false)
-        $this->_error("Unable to create socket");
-        $this->_listenSocket = $r;
+        // Initialize stream context
+        $contextOptions = array();
+        $streamContext = stream_context_create($contextOptions);
 
-        $r = socket_bind($this->_listenSocket, $this->_listenAddress, $this->_listenPort);
-        if ($r === false)
-            $this->_error("Unable to bind socket: " . socket_strerror(socket_last_error($this->_listenSocket)));
+        // Initialize listening stream
+        $r = stream_socket_server(
+            "tcp://$this->_listenAddress:$this->_listenPort",
+            $errno,
+            $errstr,
+            STREAM_SERVER_LISTEN | STREAM_SERVER_BIND,
+            $streamContext
+        );
+        if ($r === false) {
+            $this->_error("Unable to create listening stream");
+        }
+        $this->_listenStream = $r;
 
-        $r = socket_listen($this->_listenSocket, 5);
-        if ($r === false)
-            $this->_error("Unable to listen to socket: " . socket_strerror(socket_last_error($this->_listenSocket)));
+        $this->_log("Listening stream initialization complete: tcp://$this->_listenAddress:$this->_listenPort");
+    }
 
-        $this->_log("Socket initialization complete: $this->_listenAddress:$this->_listenPort");
+
+
+    /**
+     * Open TLS/SSL network stream, bind and listen
+     *
+     * @return   void
+     */
+    private function ___init_stream_ssl ()
+    {
+        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+
+        // Create SSL context for stream
+        $contextOptions = array(
+            'ssl' => array(
+                'cafile'            => $this->_ssl_cafile,
+                'local_cert'        => $this->_ssl_localCert,
+                'passphrase'        => $this->_ssl_passphrase,
+                'verify_peer'       => $this->_ssl_verifyPeer,
+                'verify_depth'      => $this->_ssl_verifyDepth,
+                'allow_self_signed' => $this->_ssl_allowSelfSigned,
+                'CN_match'          => $this->_ssl_cnMatch,
+            )
+        );
+        $streamContext = stream_context_create($contextOptions);
+
+        // Create stream
+        $this->_listenStream = stream_socket_server(
+            "tls://$this->_listenAddress:$this->_listenPort",
+            $errno,
+            $errstr,
+            STREAM_SERVER_LISTEN | STREAM_SERVER_BIND,
+            $streamContext
+        );
+
+        // Check for error
+        if ($errno != 0) {
+            $this->_error("Unable to open secure listening stream: $errstr");
+        }
+
+        // Set to non-blocking
+        $r = stream_set_blocking($this->_listenStream, 0);
+        if ($r === false) {
+            $this->_error("Unable to set stream to non-blocking.");
+        }
+
+        $this->_log("Listening stream initialization complete: tls://$this->_listenAddress:$this->_listenPort");
     }
 
 
@@ -626,7 +687,7 @@ class A2o_AppSrv_Master
             // We are the child/worker
 
             //Assign the temporary variables
-            $this->__tmp_listenSocket       = $this->_listenSocket;
+            $this->__tmp_listenStream       = $this->_listenStream;
             $this->__tmp_masterSocket_read  = $socketPair[0];
             $this->__tmp_masterSocket_write = $socketPair[1];
 
@@ -918,9 +979,9 @@ class A2o_AppSrv_Master
         // Kill the workers if necessary
         $this->___exit_killWorkers();
 
-        // Close the listening socket
-        $r = socket_close($this->_listenSocket);
-        $this->_debug('Listening socket closed');
+        // Close the listening stream
+        $r = fclose($this->_listenStream);
+        $this->_debug('Listening stream closed');
 
 
         // Remove pidfile

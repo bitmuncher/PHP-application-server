@@ -41,9 +41,9 @@ abstract class A2o_AppSrv_Client_Abstract
     protected $_parent = NULL;
 
     /**
-     * Socket handle
+     * Stream handle
      */
-    public $socket = NULL;
+    public $stream = NULL;
 
     /**
      * Remote IP address
@@ -68,18 +68,19 @@ abstract class A2o_AppSrv_Client_Abstract
     /**
      * Constructor
      *
-     * @param    resource   Socket handle
+     * @param    parent     Parent object
+     * @param    resource   Stream handle
      * @param    string     Remote IP address
      * @param    integer    Remote TCP port
      * @return   void
      */
-    public function __construct ($parent, $socket, $address, $port)
+    public function __construct ($parent, $stream, $address, $port)
     {
     	// Parent instance object
     	$this->_parent = $parent;
 
     	// Client details
-	$this->socket  = $socket;
+	$this->stream  = $stream;
 	$this->address = $address;
 	$this->port    = $port;
     }
@@ -93,7 +94,7 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     public function __destruct ()
     {
-	if ($this->socket !== NULL) {
+	if ($this->stream !== NULL) {
 	    $this->closeConnection();
 	}
     }
@@ -101,7 +102,7 @@ abstract class A2o_AppSrv_Client_Abstract
 
 
     /**
-     * Reads given length from client socket handle
+     * Reads given length from client stream handle
      *
      * Function is blocking until that many characters are received from client
      *
@@ -112,8 +113,8 @@ abstract class A2o_AppSrv_Client_Abstract
     {
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."($length)", 9);
 
-	$r = socket_read($this->socket, $length, PHP_BINARY_READ);
-	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$r = fread($this->stream, $length);
+	if ($r === false) throw new A2o_AppSrv_Client_Exception('Unable to read from client');
 
 	return $r;
     }
@@ -121,7 +122,7 @@ abstract class A2o_AppSrv_Client_Abstract
 
 
     /**
-     * Reads single line from client socket handle
+     * Reads single line from client stream handle
      *
      * Reads max 16384 characters, terminates reading on \n (and \r?)
      *
@@ -132,8 +133,10 @@ abstract class A2o_AppSrv_Client_Abstract
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
 	// Try to read	
-	$r = @socket_read($this->socket, 16384, PHP_NORMAL_READ);
-	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$r = fgets($this->stream, 16384);
+	if ($r === false) {
+            return $this->_analyseStreamError();
+        }
 	$line = $r;
 
         // If empty content, bump the empty reads counter
@@ -147,8 +150,8 @@ abstract class A2o_AppSrv_Client_Abstract
         // Basically FreeBSD workaround (Linux returns 'Connection reset by peer above')
         if ($this->__nrConsecutiveEmptyReads > $this->__nrConsecutiveEmptyReadsMax) {
             sleep($this->__nrConsecutiveEmptyReadsTimeout);
-            $r = socket_read($this->socket, 16384, PHP_NORMAL_READ);
-            if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+            $r = fgets($this->stream, 16384);
+            if ($r === false) throw new A2o_AppSrv_Client_Exception('Connection reset by peer');
             $line = $r;
 
             if ($line == '') {
@@ -171,8 +174,8 @@ abstract class A2o_AppSrv_Client_Abstract
     {
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-	$r = socket_write($this->socket, $data, strlen($data));
-	if ($r === false) throw new A2o_AppSrv_Client_Exception(socket_strerror(socket_last_error($this->socket)));
+	$r = fwrite($this->stream, $data, strlen($data));
+	if ($r === false) throw new A2o_AppSrv_Client_Exception('Unable to send data to client');
     }
 
 
@@ -189,10 +192,27 @@ abstract class A2o_AppSrv_Client_Abstract
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
 	// Close the connection
-	if (is_resource($this->socket)) {
-		socket_close($this->socket);
-		$this->socket = NULL;
+	if (is_resource($this->stream)) {
+            fclose($this->stream);
+            $this->stream = NULL;
 	}
+    }
+
+
+
+    /**
+     * Analyse stream error
+     *
+     * Throws appropriate exception
+     *
+     * @return   void
+     */
+    public function _analyseStreamError ()
+    {
+        $metaData = stream_get_meta_data($this->stream);
+        if ($metaData['timed_out'] == 1) throw new A2o_AppSrv_Client_Exception('Connection timeout');
+        if ($metaData['eof']       == 1) throw new A2o_AppSrv_Client_Exception('Connection reset by peer');
+        throw new A2o_AppSrv_Client_Exception('Connection closed unexpectedly');
     }
 
 

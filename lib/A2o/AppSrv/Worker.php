@@ -55,9 +55,9 @@ class A2o_AppSrv_Worker
     protected $___configArray_custom = false;
 
     /**
-     * Socket to listen to
+     * Stream to listen to
      */
-    protected $_listenSocket    = false;
+    protected $_listenStream = false;
 
     /**
      * Worker process properties
@@ -77,7 +77,7 @@ class A2o_AppSrv_Worker
     /**
      * Connected client details
      */
-    protected $_client_socket          = false;
+    protected $_client_stream          = false;
     protected $_client_address         = false;
     protected $_client_port            = false;
 
@@ -111,15 +111,15 @@ class A2o_AppSrv_Worker
 
 
     /**
-     * Set the communication sockets
+     * Set the communication sockets and streams
      *
      * @return   void
      */
-    public function __setSockets ($listenSocket, $masterSocket_read, $masterSocket_write)
+    public function __setSockets ($listenStream, $masterSocket_read, $masterSocket_write)
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-    	$this->_listenSocket       = $listenSocket;
+    	$this->_listenStream         = $listenStream;
     	$this->___masterSocket_read  = $masterSocket_read;
     	$this->___masterSocket_write = $masterSocket_write;
     }
@@ -180,7 +180,7 @@ class A2o_AppSrv_Worker
         if (is_callable(array($this, 'preInit'))) $this->preInit();
 
         // Then proceed with initialization
-        $this->___init_listenSocket();
+        $this->___init_listenStream();
         $this->___init_signalHandler();
 
         // If exists, call custom initialization method
@@ -192,18 +192,18 @@ class A2o_AppSrv_Worker
 
 
     /**
-     * Initialize socket
+     * Initialize listening stream
      *
      * @return   void
      */
-    private function ___init_listenSocket ()
+    private function ___init_listenStream ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        // Set the socket to non-blocking
-        socket_set_nonblock($this->_listenSocket);
+        // Set the stream to non-blocking FIXME done in master?
+//        stream_set_blocking($this->_listenStream, 0);
 
-        $this->_debug('Listening socket initialization complete');
+        $this->_debug('Listening stream initialization complete');
     }
 
 
@@ -246,7 +246,7 @@ class A2o_AppSrv_Worker
 
             //$this->_setStatus('working');
 
-            $this->handleConnection($this->_client_socket, $this->_client_address, $this->_client_port);
+            $this->handleConnection($this->_client_stream, $this->_client_address, $this->_client_port);
 
             //$this->_setStatus('idle'); // FIXME
         } while (true);
@@ -267,18 +267,19 @@ class A2o_AppSrv_Worker
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Check if any client is waiting for connection
-        $r = @socket_accept($this->_listenSocket);
-        if (($r === false) && (@socket_last_error($this->_listenSocket) === 0)) {
+        $r = @stream_socket_accept($this->_listenStream, 0);
+        if ($r === false) {
             return false;
         }
-
-        // Accept the connection
-        if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_listenSocket)));
-        $this->_client_socket = $r;
+        $this->_client_stream = $r;
 
         // Get remote IP and port
-        $r = socket_getpeername($this->_client_socket, $this->_client_address, $this->_client_port);
-        if ($r === false) throw new A2o_AppSrv_Exception(socket_strerror(socket_last_error($this->_client_socket)));
+        $r = stream_socket_get_name($this->_client_stream, true);
+        if ($r === false) {
+            $this->_log('Unable to get client name');
+            return false;
+        }
+        list($this->_client_address, $this->_client_port) = explode(':', $r);
 
         // Log the connection
         $this->_log("Client connected - $this->_client_address:$this->_client_port");
@@ -295,14 +296,14 @@ class A2o_AppSrv_Worker
      *
      * @return   void
      */
-    protected function handleConnection ($socket, $address, $port)
+    protected function handleConnection ($stream, $address, $port)
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Check if client address matches the regex
         if (!$this->isClientAllowed($address, $port)) {
             // Signal error to client
-            $client = new A2o_AppSrv_Client_Generic($this->_parent, $socket, $address, $port);
+            $client = new A2o_AppSrv_Client_Generic($this->_parent, $stream, $address, $port);
             $client->writeError("Client not allowed: $address\n");
 
             // Make a log entry and close the connection
@@ -312,7 +313,7 @@ class A2o_AppSrv_Worker
         }
 
         // Create new client instance
-        $client = new $this->_client_className($this->_parent, $socket, $address, $port);
+        $client = new $this->_client_className($this->_parent, $stream, $address, $port);
 
         // Save the client object
         $this->_client = $client;
@@ -389,8 +390,8 @@ class A2o_AppSrv_Worker
         }
 
         // Unset all the variables
-        $this->_client_socket  = false;
-        $this->_client_sddress = false;
+        $this->_client_stream  = false;
+        $this->_client_address = false;
         $this->_client_port    = false;
 
         $this->_log("Client disconnected");
@@ -545,12 +546,12 @@ class A2o_AppSrv_Worker
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        // Close the listening socket
-        socket_close($this->_listenSocket);
+        // Close the listening stream
+        fclose($this->_listenStream);
 
-        // Close the client socket if there is any client active
-        if (is_resource($this->_client_socket)) {
-            socket_close($this->_client_socket);
+        // Close the client stream if there is any client active
+        if (is_resource($this->_client_stream)) {
+            fclose($this->_client_stream);
         }
 
         // Close the IPC sockets

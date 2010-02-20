@@ -64,15 +64,19 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     /**
      * Constructor
      *
-     * @param    resource   Socket handle
+     * @param    parent     Parent object
+     * @param    resource   Stream handle
      * @param    string     Remote IP address
      * @param    integer    Remote TCP port
      * @return   void
      */
-    public function __construct ($parent, $socket, $address, $port)
+/*
+ * FIXME remove
+    public function __construct ($parent, $stream, $address, $port)
     {
-		parent::__construct($parent, $socket, $address, $port);
+		parent::__construct($parent, $stream, $address, $port);
     }
+*/
 
 
 
@@ -86,49 +90,49 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
      */
     public function readRequest ()
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		// Init the request reading
-		$this->request        = '';
-		$this->requestHeaders = '';
-		$this->requestBody    = NULL;
+        // Init the request reading
+        $this->request        = '';
+        $this->requestHeaders = '';
+        $this->requestBody    = NULL;
 
-		// Read the request header
-		$curLine        = '';
-		$prevLine       = '';
-		$contentLength  = false;
-		do {
-		    $curLine = $this->readLine();
-		    $this->request        .= $curLine;
-		    $this->requestHeaders .= $curLine;
-		    $this->_debug("Input line from client: $curLine", 8);
+        // Read the request header
+        $curLine        = '';
+        $prevLine       = '';
+        $contentLength  = false;
+        do {
+            $curLine = $this->readLine();
+            $this->request        .= $curLine;
+            $this->requestHeaders .= $curLine;
+            $this->_debug("Input line from client: $curLine", 8);
 
-		    // If we receive header 'Content-Length: xxx' - parse it
-		    if (preg_match('/^content-length: ([0-9]+)\s*$/i', $curLine, $matches)) {
-				$contentLength = $matches[1];
-				$this->_debug("Content-Length header from client: $contentLength", 8);
-		    }
+            // If we receive header 'Content-Length: xxx' - parse it
+            if (preg_match('/^content-length: ([0-9]+)\s*$/i', $curLine, $matches)) {
+                        $contentLength = $matches[1];
+                        $this->_debug("Content-Length header from client: $contentLength", 8);
+            }
 
-		    // Check if this is an end of headers
-		    if (preg_match('/^[\r\n]+$/', $curLine)) {
-				$curLine = "\n";
-		    }
-		    if (($curLine == "\n") && ($prevLine == "\n")) {
-		        break;
-		    }
+            // Check if this is an end of headers
+            if (preg_match('/^[\r\n]+$/', $curLine)) {
+                        $curLine = "\n";
+            }
+            if ($curLine == "\n") {
+                break;
+            }
 
-		    // Assign current line for later examination
-		    $prevLine = $curLine;
-		} while (true);
-		$this->_debug("HTTP request headers from client: $this->requestHeaders", 7);
+            // Assign current line for later examination
+            $prevLine = $curLine;
+        } while (true);
+        $this->_debug("HTTP request headers from client: $this->requestHeaders", 7);
 
-		// Read request body
-		if ($contentLength !== false) {
-		    $r = $this->read($contentLength);
-		    $this->request     .= $r;
-		    $this->requestBody  = trim($r);
-		    $this->_debug("HTTP request body from client:\n$this->requestBody", 7);
-		}
+        // Read request body
+        if ($contentLength !== false) {
+            $r = $this->read($contentLength);
+            $this->request     .= $r;
+            $this->requestBody  = trim($r);
+            $this->_debug("HTTP request body from client:\n$this->requestBody", 7);
+        }
     }
 
 
@@ -136,7 +140,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     /**
      * writeError
      *
-     * Writes error to the client socket handle
+     * Writes error to the client
      *
      * @param    string    HTTP error message
      * @param    integer   HTTP status code
@@ -145,15 +149,15 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
      */
     public function writeError ($errorMessage, $statusCode=500, $statusHeader='Internal server error')
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$errorMessageFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
-		$errorMessageFinal .= "Connection: close\n";
-		$errorMessageFinal .= "Content-Length: ". strlen($errorMessage) ."\n\n";
-		$errorMessageFinal .= "$errorMessage";
+        $errorMessageFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
+        $errorMessageFinal .= "Connection: close\n";
+        $errorMessageFinal .= "Content-Length: ". strlen($errorMessage) ."\n\n";
+        $errorMessageFinal .= "$errorMessage";
 
-		$this->_debug("HTTP error response:\n$errorMessageFinal", 7);
-		$this->write($errorMessageFinal);
+        $this->_debug("HTTP error response:\n$errorMessageFinal", 7);
+        $this->write($errorMessageFinal);
     }
 
 
@@ -161,7 +165,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     /**
      * writeResponse
      *
-     * Writes response to the client socket handle
+     * Writes response to the client
      *
      * @param    string    HTTP response
      * @param    integer   HTTP status code
@@ -170,15 +174,15 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
      */
     public function writeResponse ($response, $statusCode=200, $statusHeader='OK')
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+        $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$responseFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
-		$responseFinal .= "Connection: close\n";
-		$responseFinal .= "Content-Type: text/xml\n";
-		$responseFinal .= "Content-Length: ". strlen($response) ."\n\n";
-		$responseFinal .= "$response";
+        $responseFinal  = "HTTP/1.0 $statusCode $statusHeader\n";
+        $responseFinal .= "Connection: close\n";
+        $responseFinal .= "Content-Type: text/xml\n";
+        $responseFinal .= "Content-Length: ". strlen($response) ."\n\n";
+        $responseFinal .= "$response";
 
-		$this->_debug("HTTP response:\n$responseFinal", 7);
-		$this->write($responseFinal);
+        $this->_debug("HTTP response:\n$responseFinal", 7);
+        $this->write($responseFinal);
     }
 }

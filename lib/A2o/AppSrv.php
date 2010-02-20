@@ -228,7 +228,7 @@ class A2o_AppSrv
 
     	// If master process returns from run() method, this means it has forked itself and this is a child now
     	// Ergo - start the worker and remove the master object instance as it is redundant, but get the relevant data first
-    	$tmp_listenSocket       = $this->_master->__tmp_listenSocket;
+    	$tmp_listenStream       = $this->_master->__tmp_listenStream;
     	$tmp_masterSocket_read  = $this->_master->__tmp_masterSocket_read;
     	$tmp_masterSocket_write = $this->_master->__tmp_masterSocket_write;
 
@@ -237,7 +237,7 @@ class A2o_AppSrv
 
     	// Start the worker
     	$this->_worker = new $this->_className_worker($this, $this->_className);
-    	$this->_worker->__setSockets($tmp_listenSocket, $tmp_masterSocket_read, $tmp_masterSocket_write);
+    	$this->_worker->__setSockets($tmp_listenStream, $tmp_masterSocket_read, $tmp_masterSocket_write);
     	$this->_worker->__run();
     }
 

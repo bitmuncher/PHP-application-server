@@ -4,7 +4,7 @@
 
 
 // Set the include path
-set_include_path('.' . PATH_SEPARATOR . dirname(dirname(dirname(__FILE__))).'/lib');
+set_include_path('.' . PATH_SEPARATOR . dirname(dirname(dirname(__FILE__))).'/lib' . PATH_SEPARATOR . get_include_path());
 
 // Enable Zend Autoloader
 require_once "Zend/Loader/Autoloader.php";

@@ -42,7 +42,7 @@ class A2o_AppSrv_Worker_DemoXmlRpc extends A2o_AppSrv_Worker
     	$response  = "Hello!\n";
     	$response .= "Method: $method\n";
     	$response .= "Params: $params_r\n";
-    	return $response;
+    	return array($response);
     }
 
 
@@ -64,12 +64,12 @@ class A2o_AppSrv_Worker_DemoXmlRpc extends A2o_AppSrv_Worker
 
     	// Construct response
     	$response = xmlrpc_server_call_method($this->XmlRpcServer, $request_raw, NULL);
-    	$this->_debug_r($response);
+    	//$this->_debug_r($response);
 
     	// Send the reponse back to the client
-		$client->writeResponse($response);
+	$client->writeResponse($response);
 
-		// Close the client connection
-		$this->closeConnection();
+	// Close the client connection
+	$this->closeConnection();
     }
 }
