@@ -38,7 +38,7 @@ abstract class A2o_AppSrv_Client_Abstract
     /**
      * Parent instance object
      */
-    protected $_parent = NULL;
+    protected $___parent = NULL;
 
     /**
      * Stream handle
@@ -77,7 +77,7 @@ abstract class A2o_AppSrv_Client_Abstract
     public function __construct ($parent, $stream, $address, $port)
     {
     	// Parent instance object
-    	$this->_parent = $parent;
+    	$this->___parent = $parent;
 
     	// Client details
 	$this->stream  = $stream;
@@ -249,7 +249,7 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     protected function _debug ($message, $importanceLevel=5)
     {
-    	$this->_parent->__debug($message, $importanceLevel);
+    	$this->___parent->__debug($message, $importanceLevel);
     }
 
 
@@ -259,7 +259,7 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     protected function _debug_r ($var, $importanceLevel=5)
     {
-    	$this->_parent->__debug_r($var, $importanceLevel);
+    	$this->___parent->__debug_r($var, $importanceLevel);
     }
 
 
@@ -268,7 +268,7 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     protected function _log ($message)
     {
-    	$this->_parent->__log($message);
+    	$this->___parent->__log($message);
     }
 
 
@@ -278,7 +278,7 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     protected function _warning ($message)
     {
-    	$this->_parent->__warning($message);
+    	$this->___parent->__warning($message);
     }
 
 
@@ -288,6 +288,6 @@ abstract class A2o_AppSrv_Client_Abstract
      */
     protected function _error ($message)
     {
-    	$this->_parent->__error($message);
+    	$this->___parent->__error($message);
     }
 }

@@ -34,11 +34,11 @@ require_once 'A2o/AppSrv/Exception.php';
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
  * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
-class A2o_AppSrv_Debug {
+final class A2o_AppSrv_Debug {
     /**
      * Parent system
      */
-    protected $_parent = false;
+    protected $___parent = false;
 
     /**
      * Messages with importance number lower or equal to this threshold will get logged/written to output
@@ -55,7 +55,7 @@ class A2o_AppSrv_Debug {
      */
     public function __construct ($parent)
     {
-    	$this->_parent = $parent;
+    	$this->___parent = $parent;
     }
 
 
@@ -67,7 +67,7 @@ class A2o_AppSrv_Debug {
      */
     public function __destruct ()
     {
-    	$this->_parent = NULL;
+    	$this->___parent = NULL;
     }
 
 
@@ -99,7 +99,7 @@ class A2o_AppSrv_Debug {
     {
         // echo __CLASS__ .'::'. __FUNCTION__ ." il=$importanceLevel th=$this->_threshold\n";
         if ($importanceLevel <= $this->_threshold) {
-            $this->_parent->__log($message);
+            $this->___parent->__log($message);
         }
     }
 
@@ -116,7 +116,7 @@ class A2o_AppSrv_Debug {
     {
     	// echo __CLASS__ .'::'. __FUNCTION__ ." il=$importanceLevel th=$this->_threshold\n";
     	if ($importanceLevel <= $this->_threshold) {
-            $this->_parent->__log_r($var);
+            $this->___parent->__log_r($var);
         }
     }
 }

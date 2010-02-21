@@ -33,6 +33,8 @@ class A2o_AppSrv_Worker_DemoXmlRpc extends A2o_AppSrv_Worker
 
     protected function _xmlrpc_sayHello ($method, $params)
     {
+        $this->_log("Client called RPC method: $method()");
+
     	// Get the parameters array printed
     	ob_start();
     	print_r($params);
@@ -49,6 +51,8 @@ class A2o_AppSrv_Worker_DemoXmlRpc extends A2o_AppSrv_Worker
 
     protected function _xmlrpc_sayYellow ($params)
     {
+        $this->_log("Client called RPC method: $method()");
+
     	return "Yellow!";
     }
 

@@ -37,22 +37,12 @@ class A2o_AppSrv_Worker
     /**
      * Parent instance object
      */
-    protected $_parent = false;
-
-    /**
-     * Parent class name
-     */
-    protected $_parentClassName = false;
+    protected $___parent = false;
 
     /**
      * Configuration array
      */
-    protected $___configArray = false;
-
-    /**
-     * Configuration array
-     */
-    protected $___configArray_custom = false;
+    protected $_config = false;
 
     /**
      * Stream to listen to
@@ -70,8 +60,7 @@ class A2o_AppSrv_Worker
     /**
      * Client details
      */
-    protected $_client_allowedIpsRegex = '.*';
-    protected $_client_type            = 'Http';
+    protected $_client_allowedIpsRegex = '127\.0\.0\.1';
     protected $_client_className       = 'A2o_AppSrv_Client_Http';
 
     /**
@@ -95,17 +84,13 @@ class A2o_AppSrv_Worker
      * @param    string   Parent class name, used for ini parsing (section prefix)
      * @return   void
      */
-    public function __construct ($parent, $parentClassName)
+    public function __construct ($parent)
     {
-    	$this->_parent          = $parent;
-        $this->_parentClassName = $parentClassName;
+    	$this->___parent  =  $parent;
+        $this->_config    =& $this->___parent->_config;
+    	$this->_masterPid =& $this->___parent->__masterPid;
 
-        $this->___configArray        =& $this->_parent->__configArray;
-    	$this->___configArray_custom =& $this->_parent->__configArray_custom;
-
-    	$this->_masterPid =& $this->_parent->__masterPid;
-
-    	$this->_parent->__registerMe_asWorker();
+    	$this->___parent->__registerMe_asWorker();
     }
 
 
@@ -136,7 +121,7 @@ class A2o_AppSrv_Worker
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	// First merge the config with internal variables
-        $this->___configArray_apply();
+        $this->___configApply();
 
         // Execute worker initialization
         $this->___init();
@@ -152,17 +137,16 @@ class A2o_AppSrv_Worker
      *
      * @return   void
      */
-    private function ___configArray_apply ()
+    private function ___configApply ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        $ca =& $this->___configArray;
+        $config =& $this->_config;
 
         // Parse through sections
         $iniSection = 'Clients';
-        $this->_client_allowedIpsRegex = $ca[$iniSection]['allowed_ips_regex'];
-        $this->_client_type            = $ca[$iniSection]['client_type'];
-        $this->_client_className       = $ca[$iniSection]['client_class_name'];
+        $this->_client_allowedIpsRegex = $config[$iniSection]['allowed_ips_regex'];
+        $this->_client_className       = $config[$iniSection]['class_name'];
     }
 
 
@@ -217,7 +201,7 @@ class A2o_AppSrv_Worker
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        $this->_parent->__init_signalHandler();
+        $this->___parent->__init_signalHandler();
     }
 
 
@@ -311,7 +295,7 @@ class A2o_AppSrv_Worker
         // Check if client address matches the regex
         if (!$this->isClientAllowed($address, $port)) {
             // Signal error to client
-            $client = new A2o_AppSrv_Client_Generic($this->_parent, $stream, $address, $port);
+            $client = new A2o_AppSrv_Client_Generic($this->___parent, $stream, $address, $port);
             $client->writeError("Client not allowed: $address\n");
 
             // Make a log entry and close the connection
@@ -321,7 +305,7 @@ class A2o_AppSrv_Worker
         }
 
         // Create new client instance
-        $client = new $this->_client_className($this->_parent, $stream, $address, $port);
+        $client = new $this->_client_className($this->___parent, $stream, $address, $port);
 
         // Save the client object
         $this->_client = $client;
@@ -433,7 +417,7 @@ class A2o_AppSrv_Worker
                 break;
             case SIGTERM:
                 $this->_debug("Caught SIGTERM, running shutdown method...");
-                $this->_parent->__exit();
+                $this->___parent->__exit();
                 break;
             case SIGCHLD:
             case SIGINT:
@@ -548,10 +532,13 @@ class A2o_AppSrv_Worker
 
     /**
      * Handles the graceful exit of worker process
+     * This is usually called from $___parent instance.
+     * It does the cleanup of worker-specific things.
+     * Actual exit is done by parent instance.
      *
      * @return   void
      */
-    public function __exit ()
+    public function __exitCleanup ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
@@ -575,7 +562,7 @@ class A2o_AppSrv_Worker
      */
     protected function _debug ($message, $importanceLevel=5)
     {
-    	$this->_parent->__debug($message, $importanceLevel);
+    	$this->___parent->__debug($message, $importanceLevel);
     }
 
 
@@ -585,7 +572,7 @@ class A2o_AppSrv_Worker
      */
     protected function _debug_r ($var, $importanceLevel=5)
     {
-    	$this->_parent->__debug_r($var, $importanceLevel);
+    	$this->___parent->__debug_r($var, $importanceLevel);
     }
 
 
@@ -594,7 +581,7 @@ class A2o_AppSrv_Worker
      */
     protected function _log ($message)
     {
-    	$this->_parent->__log($message);
+    	$this->___parent->__log($message);
     }
 
 
@@ -604,7 +591,7 @@ class A2o_AppSrv_Worker
      */
     protected function _warning ($message)
     {
-    	$this->_parent->__warning($message);
+    	$this->___parent->__warning($message);
     }
 
 
@@ -614,6 +601,6 @@ class A2o_AppSrv_Worker
      */
     protected function _error ($message)
     {
-    	$this->_parent->__error($message);
+    	$this->___parent->__error($message);
     }
 }

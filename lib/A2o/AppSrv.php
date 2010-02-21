@@ -39,43 +39,19 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.4.0alpha';
+    const version = '0.5.0prealpha';
 
-    /**
-     * Subsystem class names
-     */
-    protected $_className        = 'A2o_AppSrv';
-    protected $_className_cli    = 'A2o_AppSrv_Cli';
-    protected $_className_master = 'A2o_AppSrv_Master';
-    protected $_className_worker = 'A2o_AppSrv_Worker';
-    protected $_className_log    = 'A2o_AppSrv_Log';
-    protected $_className_debug  = 'A2o_AppSrv_Debug';
 
 
     /**
-     * Log subsystem object
+     * Subsystems objects
      */
-    protected $_log = false;
+    protected $___log    = false;
+    protected $___debug  = false;
+    protected $___cli    = false;
+    protected $___master = false;
+    protected $___worker = false;
 
-    /**
-     * Debug subsystem object
-     */
-    protected $_debug = false;
-
-    /**
-     * CLI subsystem object
-     */
-    protected $_cli = false;
-
-    /**
-     * Master process subsystem object
-     */
-    protected $_master = false;
-
-    /**
-     * Worker process subsystem object
-     */
-    protected $_worker = false;
 
 
     /**
@@ -85,65 +61,124 @@ class A2o_AppSrv
     protected $_whoAmI_log = 'uninit';   // (uninit|CLI|MASTER|worker)
     protected $_whoAmI_pid = 'uninit';   // (uninit|pid of current process)
 
+
+
     /**
-     * Master process PID
+     * Master process PID, for workers if required
      */
     public $__masterPid = 'uninit';   // (uninit|pid of current process)
+
+
 
     /**
      * Config file parsing and CLI parsing parameters from constructor - temporary storage
      */
-    private   $___tmp_ini          = false;
-    private   $___tmp_parseCliArgs = true;
+    public  $__configFile          = false;
+    public  $__configSectionPrefix = 'A2o_AppSrv_';
+    private $___tmp_parseCliArgs   = true;
+
+
 
     /**
      * Configuration data arrays
      */
-    public  $__configArray        = array();   // Merged together, for "public" access
-    private $_configArray_cli     = array();   // From command line arguments
-    private $_configArray_ini     = array();   // From ini file or ini array passed to constructor
-    private $_configArray_default = array(     // Defaults
+    public  $__config               = array();   // Merged together, for "public" access
+    private $___configArray_cli     = array();   // From command line arguments
+    private $___configArray_php     = array();   // Modifications hardcoded with set*() function calls
+    private $___configArray_ini     = array();   // From ini file or ini array passed to constructor
+    public  $__configArray_defaults = array(     // Defaults
         'Daemon' => array(
-            'executable_name' => 'A2o_AppSrv',
-            'work_dir'        => '/opt/daemons/A2o_AppSrv',
-            'pid_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.pid',
-            'user'            => 'nobody',
-            'group'           => 'nogroup',
+            'daemonize'         => true,
+            'executable_name'   => 'A2o_AppSrv',
+            'work_dir'          => '/opt/daemons/A2o/AppSrv',
+            'pid_file'          => '/opt/daemons/A2o/AppSrv/A2o_AppSrv.pid',
+            'user'              => 'nobody',
+            'group'             => 'nogroup',
         ),
         'Logging' => array(
-            'log_file'        => '/opt/daemons/A2o_AppSrv/A2o_AppSrv.log',
-            'debug_level'     => 5,
-            'debug_to_screen' => true,
+            'log_file'          => '/opt/daemons/A2o/AppSrv/A2o_AppSrv.log',
+            'log_level'         => 5,
         ),
         'Socket' => array(
-            'listen_address'        => '0.0.0.0',
-            'listen_port'           => 30000,
-            'ssl'                   => false,
-            'ssl_cafile'            => '/opt/daemons/A2o_AppSrv/ca.pem',
-            'ssl_local_cert'        => '/opt/daemons/A2o_AppSrv/cert.pem',
-            'ssl_passphrase'        => '',
-            'ssl_verify_peer'       => true,
-            'ssl_verify_depth'      => 1,
-            'ssl_allow_self_signed' => false,
-            'ssl_CN_match'          => '*.a2o.si',
+            'listen_address'    => '0.0.0.0',
+            'listen_port'       => 30000,
+        ),
+        'Ssl' => array(
+            'enabled'           => false,
+            'type'              => 'ssl',
+            'cafile'            => '/opt/daemons/A2o/AppSrv/ca.crt',
+            'local_cert'        => '/opt/daemons/A2o/AppSrv/server.pem',
+            'passphrase'        => '',
+            'verify_peer'       => false,
+            'verify_depth'      => 5,
+            'allow_self_signed' => true,
+            'CN_match'          => '',
+        ),
+        'Master' => array(
+            'class_name'        => 'A2o_AppSrv_Master',
         ),
         'Workers' => array(
-            'min_workers'      => 2,
-            'min_idle_workers' => 1,
-            'max_idle_workers' => 2,
-            'max_workers'      => 10,
+            'class_name'        => 'A2o_AppSrv_Worker',
+            'min_workers'       => 2,
+            'min_idle_workers'  => 1,
+            'max_idle_workers'  => 2,
+            'max_workers'       => 10,
         ),
         'Clients' => array(
-            'allowed_ips_regex' => '[0-9]+.[0-9]+.[0-9]+.[0-9]+',
-            'client_type'       => 'Http',
-            'client_class_name' => 'A2o_AppSrv_Client_Http',
+            'class_name'        => 'A2o_AppSrv_Client_Http',
+            'allowed_ips_regex' => '127\.0\.0\.1',
         ),
     );
+    public  $__configArray_comments = array(     // Comments to values
+        'Daemon' => array(
+            'daemonize'         => '(bool) Whether to daemonize or stay in foreground',
+            'executable_name'   => '(string) Name of executable, for searching the process table',
+            'work_dir'          => '(string) Working directory of a daemon',
+            'pid_file'          => '(string) File to write master pid to',
+            'user'              => '(string) Username under which daemon should run',
+            'group'             => '(string) Group under which daemon should run',
+        ),
+        'Logging' => array(
+            'log_file'          => '(string) File where to log messages when daemonized',
+            'log_level'         => '(int) Logging verbosity, available values are 0-9 ',
+        ),
+        'Socket' => array(
+            'listen_address'    => '(string) IP address of listening socket, or 0.0.0.0 to use all',
+            'listen_port'       => '(int) Port number of listening socket',
+        ),
+        'Ssl' => array(
+            'enabled'           => '(bool) Whether to enable SSL on listening socket',
+            'type'              => '(string) Which SSL type, ssl or tls are available options',
+            'cafile'            => '(string) Path to CA certificate file (PEM encoded)',
+            'local_cert'        => '(string) Path to local certificate & key to use as server (PEM encoded)',
+            'passphrase'        => '(string) Passphrase to unlock private key, if required',
+            'verify_peer'       => '(bool) Whether to verify peer against CA certificate',
+            'verify_depth'      => '(int) Allow this long certificate issuer chain depth (1-N)',
+            'allow_self_signed' => '(bool) Allow self signed certs?',
+            'CN_match'          => '(string) Match this string against REMOTE CN. Currently (PHP 5.2.12) it does not support wildcards in CN_match, only in remote CN. Thus if you specify CN_match=host.example.org and client presents certificate with CN=*.example.org it will be allowed to connect. On the contrary, if you specify CN_match=*.example.org and client has CN=host.example.org, it will not match. See PHP bug #51100 for more information.',
+        ),
+        'Master' => array(
+            'class_name'        => '(string) Name of master class',
+        ),
+        'Workers' => array(
+            'class_name'        => '(string) Name of worker class',
+            'min_workers'       => '(int) When started, start this many workers and do not drop below this number of workers',
+            'min_idle_workers'  => '(int) If less that min_idle_workers of idle workers is available, start spawning new workers',
+            'max_idle_workers'  => '(int) If more than max_idle_workers are available, start killing them to save memory',
+            'max_workers'       => '(int) Hard upper limit of workers',
+        ),
+        'Clients' => array(
+            'class_name'        => 'Name of client class to instantiate when client connection is received',
+            'allowed_ips_regex' => '(string) Regex to match IP against when client connects. Start(^) and end($) anchors are added explicitly',
+        ),
+    );
+
+
 
     /**
      * Custom configuration options read from ini file - a.k.a. unrecognised sections
      */
-    public $__configArray_custom = false;
+    private $___configArray_custom = array();
 
 
 
@@ -164,13 +199,11 @@ class A2o_AppSrv
      * 2. flag whether it should parse the command line arguments
      *
      * @param    (null|bool|string|array)   $ini            Process ini file
-     * @param    (null|bool)                $parseCliArgs   Parse CLI arguments?
      * @return   void
      */
-    public function __construct ($ini=NULL, $parseCliArgs=true)
+    public function __construct ($configFile=NULL)
     {
-    	$this->___tmp_ini          = $ini;
-    	$this->___tmp_parseCliArgs = $parseCliArgs;
+    	$this->__configFile = $configFile;
     }
 
 
@@ -186,11 +219,91 @@ class A2o_AppSrv
 
 
     /**
-     * Set the worker class
+     * Enable parsing of command line arguments
      */
-    public function setClassName_worker ($className_worker)
+    public function enableParsingCliArgs ()
     {
-    	$this->_className_worker = $className_worker;
+        $this->___parseCliArgs = true;
+    }
+
+
+
+    /**
+     * Disable parsing of command line arguments
+     */
+    public function disableParsingCliArgs ()
+    {
+        $this->___parseCliArgs = false;
+    }
+
+
+
+    /**
+     * Set path to config file or receive array of config options
+     *
+     * @param    (string|array|NULL)   Array of config options or path to config file
+     * @return   void
+     */
+    public function setConfigFile ($configFile)
+    {
+        // If setting config file is
+        if ($configFile == NULL) {
+            $this->__configFile = NULL;
+            return;
+        }
+
+        // If array just assign it
+        if (is_array($configFile)) {
+            $this->__configFile = $configFile;
+            return;
+        }
+
+        // Else check if file exists
+        if (!file_exists($configFile)) {
+            throw new A2o_App_Exception("Config file does not exist: $configFile");
+        }
+        $this->__configFile = $configFile;
+    }
+
+
+
+    /**
+     * Set prefix of system config sections
+     *
+     * @param    string   Config section prefix
+     * @return   void
+     */
+    public function setConfigSectionPrefix ($configSectionPrefix)
+    {
+        $this->__configSectionPrefix = $configSectionPrefix;
+    }
+
+
+
+    /**
+     * Set the master class name
+     */
+    public function setClassName_master ($className)
+    {
+        if (!class_exists($className)) {
+            throw new A2o_AppSrv_Exception("Invalid class name: $className");
+        }
+        //FIXME
+    	$this->___className_master = $className;
+    }
+
+
+
+    /**
+     * Set the worker class name
+     */
+    public function setClassName_worker ($className)
+    {
+        if (!class_exists($className)) {
+            throw new A2o_AppSrv_Exception("Invalid class name: $className");
+        }
+        //FIXME
+    	$this->___className_worker = $className;
     }
 
 
@@ -203,42 +316,45 @@ class A2o_AppSrv
     public function run ()
     {
         // Start logging and debugging subsystems
-        $this->_log   = new A2o_AppSrv_Log();
-        $this->_debug = new A2o_AppSrv_Debug($this);
+        $this->___log   = new A2o_AppSrv_Log();
+        $this->___debug = new A2o_AppSrv_Debug($this);
 
         // Start the CLI subsystem which parses the command line arguments and .ini file
-        $this->_cli = new $this->_className_cli($this, $this->_className, $this->___tmp_ini, $this->___tmp_parseCliArgs);
-    	$this->_cli->__run();
+        $this->___cli = new A2o_AppSrv_Cli($this, $this->___tmp_parseCliArgs);
+    	$this->___cli->__run();
 
     	// Get the settings
-    	$this->_configArray_cli     = $this->_cli->__configArray_cli;
-    	$this->_configArray_ini     = $this->_cli->__configArray_ini;
-    	$this->__configArray_custom = $this->_cli->__configArray_custom;
+    	$this->___configArray_cli    = $this->___cli->__configArray_cli;
+    	$this->___configArray_ini    = $this->___cli->__configArray_ini;
+    	$this->___configArray_custom = $this->___cli->__configArray_custom;
 
     	// Shut down the CLI subsystem
-    	unset($this->_cli);
+//    	unset($this->_cli);
 
     	// Merge the config settings and apply them
     	$this->___configArrays_merge();
     	$this->___configArray_apply();
 
     	// Start the master process
-	$this->_master = new $this->_className_master($this, $this->_className);
-    	$this->_master->__run();
+	$this->___master = new $this->_config['Master']['class_name']($this);
+    	$this->___master->__run();
 
     	// If master process returns from run() method, this means it has forked itself and this is a child now
     	// Ergo - start the worker and remove the master object instance as it is redundant, but get the relevant data first
-    	$tmp_listenStream       = $this->_master->__tmp_listenStream;
-    	$tmp_masterSocket_read  = $this->_master->__tmp_masterSocket_read;
-    	$tmp_masterSocket_write = $this->_master->__tmp_masterSocket_write;
+    	$tmp_listenStream       = $this->___master->__tmp_listenStream;
+    	$tmp_masterSocket_read  = $this->___master->__tmp_masterSocket_read;
+    	$tmp_masterSocket_write = $this->___master->__tmp_masterSocket_write;
 
     	// Shut down the master subsystem
-    	unset($this->_master);
+    	unset($this->___master);
 
     	// Start the worker
-    	$this->_worker = new $this->_className_worker($this, $this->_className);
-    	$this->_worker->__setSockets($tmp_listenStream, $tmp_masterSocket_read, $tmp_masterSocket_write);
-    	$this->_worker->__run();
+    	$this->___worker = new $this->_config['Workers']['class_name']($this);
+    	$this->___worker->__setSockets($tmp_listenStream, $tmp_masterSocket_read, $tmp_masterSocket_write);
+    	$this->___worker->__run();
+
+        // This should never occur
+        throw new A2o_AppSrv_Exception('Invalid execution branch');
     }
 
 
@@ -252,8 +368,13 @@ class A2o_AppSrv
     {
         $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-    	$r = $this->___array_replace_recursive($this->_configArray_default, $this->_configArray_ini, $this->_configArray_cli);
-    	$this->__configArray = $r;
+    	$this->_config = $this->___array_replace_recursive(
+            $this->___configArray_custom,
+            $this->__configArray_defaults,
+            $this->___configArray_ini,
+            $this->___configArray_php,
+            $this->___configArray_cli
+        );
     }
 
 
@@ -267,17 +388,17 @@ class A2o_AppSrv
     {
         $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-    	// Set debugging options
-    	$this->_debug->setThreshold($this->__configArray['Logging']['debug_level']);
-    	if ($this->__configArray['Logging']['debug_to_screen']) {
-            $this->_log->enableLogToScreen();
+    	// Set logging and debugging options
+    	if ($this->_config['Master']['daemonize'] == true) {
+            $this->___log->openLogFile($this->_config['Logging']['log_file']);
     	} else {
-            $this->_log->openLogFile($this->__configArray['Logging']['log_file']);
+            $this->___log->enableLogToScreen();
         }
-
+    	$this->___debug->setThreshold($this->_config['Logging']['log_level']);
+echo $this->_config['Logging']['log_level'];
     	// Dump config array
     	$this->__debug("Configuration array dump START", 8);
-    	$this->__debug_r($this->__configArray, 8);
+    	$this->__debug_r($this->_config, 8);
     	$this->__debug("Configuration array dump END", 8);
     }
 
@@ -288,19 +409,25 @@ class A2o_AppSrv
      *
      * @return   void
      */
-    private function ___array_replace_recursive($arr1, $arr2, $arr3)
+    private function ___array_replace_recursive()
     {
-    	// FIXME for PHP 5.3 replace with array_replace_recursive
-    	foreach ($arr1 as $secName1 => $secData1) {
-            foreach ($secData1 as $secName2 => $secData2) {
-                if (isset($arr3[$secName1][$secName2])) {
-                    $arr1[$secName1][$secName2] = $arr3[$secName1][$secName2];
-                } elseif (isset($arr2[$secName1][$secName2])) {
-                    $arr1[$secName1][$secName2] = $arr2[$secName1][$secName2];
+        // FIXME for PHP 5.3 replace with array_replace_recursive
+
+        $retArray = array();
+        for ($i=0 ; $i<func_num_args() ; $i++) {
+            $arr = func_get_arg($i);
+            foreach ($arr as $secName => $secData) {
+                if (!isset($retArray[$secName])) {
+                    $retArray[$secName] = array();
+                }
+
+                foreach ($secData as $option => $value) {
+                    $retArray[$secName][$option] = $value;
                 }
             }
-    	}
-    	return $arr1;
+        }
+
+    	return $retArray;
     }
 
 
@@ -361,7 +488,7 @@ class A2o_AppSrv
     public function __log ($message)
     {
 	$messageFinal = "$this->_whoAmI_log (pid=$this->_whoAmI_pid): $message";
-    	$this->_log->log($messageFinal);
+    	$this->___log->log($messageFinal);
     }
 
 
@@ -394,7 +521,7 @@ class A2o_AppSrv
     public function __debug ($message, $importanceLevel=5)
     {
 	$messageFinal =& $message;
-    	$this->_debug->debug($messageFinal, $importanceLevel);
+    	$this->___debug->debug($messageFinal, $importanceLevel);
     }
 
 
@@ -444,7 +571,7 @@ class A2o_AppSrv
     {
     	$messageFinal = "ERROR: $message";
 
-    	$this->_log->enableLogToScreen();
+    	$this->___log->enableLogToScreen();
     	$this->__log($messageFinal);
 
     	$this->__exit($exitStatus);
@@ -492,13 +619,13 @@ class A2o_AppSrv
         // Let us process the signal now
         switch ($this->_whoAmI) {
             case 'cli':
-                $this->_cli->__signalHandler($signo);
+                $this->___cli->__signalHandler($signo);
                 break;
             case 'master':
-                $this->_master->__signalHandler($signo);
+                $this->___master->__signalHandler($signo);
                 break;
             case 'worker':
-                $this->_worker->__signalHandler($signo);
+                $this->___worker->__signalHandler($signo);
                 break;
         }
 
@@ -862,13 +989,13 @@ class A2o_AppSrv
 
         switch ($this->_whoAmI) {
             case 'cli':
-                $this->_cli->__exit($exitStatus);
+                $this->___cli->__exitCleanup();
                 break;
             case 'master':
-                $this->_master->__exit($exitStatus);
+                $this->___master->__exitCleanup();
                 break;
             case 'worker':
-                $this->_worker->__exit($exitStatus);
+                $this->___worker->__exitCleanup();
                 break;
             default:
             throw new A2o_AppSrv_Exception("Unknown _whoAmI: $this->_whoAmI");
@@ -880,7 +1007,7 @@ class A2o_AppSrv
             $this->__log("Shutdown complete (less logfile which will close now).");
             $this->__debug('--');
         }
-        $this->_log->closeLogFile();
+        $this->___log->closeLogFile();
 
         // Do exit now
         exit($exitStatus);

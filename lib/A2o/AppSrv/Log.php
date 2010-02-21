@@ -34,7 +34,7 @@ require_once 'A2o/AppSrv/Exception.php';
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
  * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
-class A2o_AppSrv_Log {
+final class A2o_AppSrv_Log {
     /**
      * Output messages to STDOUT
      */

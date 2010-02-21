@@ -32,34 +32,28 @@ require_once 'A2o/AppSrv/Exception.php';
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
  * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
-class A2o_AppSrv_Cli
+final class A2o_AppSrv_Cli
 {
     /**
      * Parent instance object
      */
-    protected $_parent = false;
-
-    /**
-     * Parent class name
-     */
-    protected $_parentClassName = false;
+    protected $___parent = false;
 
     /**
      * CLI arguments parsing
      */
-    protected $_parseCliArgs = true;
+    protected $___parseCliArgs = true;
 
     /**
      * Config .ini file parsing
      */
-    protected $_iniFile             = '/opt/daemons/A2o_AppSrv/A2o_AppSrv.ini';
-    protected $_parseIniFile        = true;
+    protected $___parseConfigFile = true;
 
     /**
      * Configuration data arrays
      */
     public $__configArray_cli    = array();   // From command line arguments
-    public $__configArray_ini    = array();   // From ini file or ini array passed to constructor
+    public $__configArray_ini    = array();   // From config file or config array passed to constructor
     public $__configArray_custom = array();   // Custom array of unrecognised ini sections
 
 
@@ -68,47 +62,59 @@ class A2o_AppSrv_Cli
      * Constructor
      *
      * @param    object                     Parent object reference
-     * @param    string                     Parent class name, used for ini parsing (section prefix)
-     * @param    (null|bool|string|array)   $ini            Process ini file
      * @param    (null|bool)                $parseCliArgs   Parse CLI arguments?
      * @return   void
      */
-    public function __construct ($parent, $parentClassName, $ini=NULL, $parseCliArgs=true)
+    public function __construct ($parent, $parseCliArgs=true)
     {
         // Set the parent object and register the process
-        $this->__setParent($parent, $parentClassName);
-        $this->_parent->__registerMe_asCli();
+        $this->___setParent($parent, $parentClassName);
+        $this->___parent->__registerMe_asCli();
 
-        // Config file parsing?
-        if ($ini === NULL) {
-            // Defaults
-        } elseif ($ini === false) {                // Do not parse the config file
-            $this->_parseIniFile        = false;
-            $this->_iniFile             = NULL;
-        } elseif ($ini === true) {                 // Parse the default config file
-            $this->_parseIniFile        = true;
-        } elseif (is_string($ini)) {               // Parse THIS config file
-            $this->_parseIniFile        = true;
-                $this->_iniFile             = $ini;
-        /* FIXME remove?
-        } elseif (is_array($ini)) {                // Load THIS config array
-            $this->_iniFile             = NULL;
-            $this->_parseIniFile        = false;
-            $this->_iniConfigArray      = $ini;
-        */
-        } else {
-            throw new A2o_AppSrv_Exception('ERR_CONSTRUCTOR_PARAM_ini_INVALID');
-        }
+        // Get config file
+        $configFile = $this->___parent->__configFile;
+
+
 
         // CLI arguments parsing?
         if ($parseCliArgs === NULL) {
             // Defaults
+
         } elseif ($parseCliArgs === false) {
-            $this->_parseCliArgs = false;
+            $this->___parseCliArgs = false;
+
         } elseif ($parseCliArgs === true) {
-            $this->_parseCliArgs = true;
+            $this->___parseCliArgs = true;
+
         } else {
             throw new A2o_AppSrv_Exception('ERR_CONSTRUCTOR_PARAM_parseCliArgs_INVALID');
+        }
+
+
+
+        // Config file parsing?
+        if ($this->___parent->__configFile === NULL) {
+            // Defaults
+
+        } elseif ($this->___parent->__configFile === false) {
+            // Do not parse the config file
+            $this->___parseConfigFile = false;
+
+        } elseif ($this->___parent->__configFile === true) {
+            // Parse the default config file
+            $this->___parseConfigFile = true;
+
+        } elseif (is_string($this->___parent->__configFile)) {
+            // Parse THIS config file
+            $this->___parseConfigFile = true;
+
+        } elseif (is_array($configFile)) {
+            // Load THIS config array
+            $this->___parseConfigFile = false;
+            $this->___configArray_ini = $this->___parent->__configFile;
+
+        } else {
+            throw new A2o_AppSrv_Exception('ERR_CONSTRUCTOR_parent->configFile_INVALID');
         }
     }
 
@@ -118,15 +124,14 @@ class A2o_AppSrv_Cli
      * __setParent
      *
      * @param    object   Save parent object reference for future access
-     * @param    string   Parent object class name, for ini parsing - section prefix
      * @return   void
      */
-    public function __setParent ($parent, $parentClassName)
+    private function ___setParent ($parent)
     {
-        if ($this->_parent !== false)
+        if ($this->___parent !== false) {
             throw new A2o_AppSrv_Exception('Parent object already set');
-        $this->_parent = $parent;
-        $this->_parentClassName = $parentClassName;
+        }
+        $this->___parent = $parent;
     }
 
 
@@ -140,7 +145,7 @@ class A2o_AppSrv_Cli
     {
         // CLI process
         $this->___parseCliArgs();
-        $this->___parseIniFile();
+        $this->___parseConfigFile();
     }
 
 
@@ -153,27 +158,29 @@ class A2o_AppSrv_Cli
     private function ___parseCliArgs ()
     {
         // Check if parsing CLI arguments is explicitly disabled by constructor parameter
-        if ($this->_parseCliArgs !== true) {
+        if ($this->___parseCliArgs !== true) {
             return;
         }
 
         // These short options are available
         $shortOpts  = '';
-        $shortOpts .= 'd::';
-        $shortOpts .= 'i:';
         $shortOpts .= 'h';
         $shortOpts .= 'v';
+        $shortOpts .= 'g';
+        $shortOpts .= 'd::';
+        $shortOpts .= 'c:';
 
         // These long options available - FIXME
         $longOpts   = array(
-            'debug::',
-            'ini:',
             'help',
             'version',
+            'generate-config',
+            'debug::',
+            'config:',
         );
 
         // Parse CLI arguments
-        // FIXME add support for long options
+        // FIXME add support for long options (emits warning on PHP 5.2)
         //$cliArgs = getopt($shortOpts, $longOpts);
         $cliArgs = getopt($shortOpts);
 
@@ -187,22 +194,27 @@ class A2o_AppSrv_Cli
             $this->___action_displayVersion();
         }
 
+        // Should we generate default config file?
+        if (isset($cliArgs['g'])) {
+            $this->___action_generateConfig();
+        }
+
         // Shall we enable debugging?
         if (isset($cliArgs['d'])) {
             $this->__configArray_cli = array();
-            $this->__configArray_cli['Logging'] = array();
-            $this->__configArray_cli['Logging']['debug_to_screen'] = true;
+            $this->__configArray_cli['Daemon'] = array();
+            $this->__configArray_cli['Daemon']['daemonize'] = false;
 
             // Shall we set the debug level?
             if (($cliArgs['d'] !== false) && preg_match('/^[1-9]$/', $cliArgs['d'])) {
-                $this->__configArray_cli['Logging']['debug_level'] = $cliArgs['d'];
+                $this->__configArray_cli['Logging']['log_level'] = $cliArgs['d'];
             }
         }
 
         // Is custom ini file specified?
-        if (isset($cliArgs['i']) && ($cliArgs['i'] !== false)) {
-            $this->_parseIniFile        = true;
-            $this->_iniFile             = $cliArgs['i'];
+        if (isset($cliArgs['c']) && ($cliArgs['c'] !== false)) {
+            $this->___parseConfigFile      = true;
+            $this->___parent->__configFile = $cliArgs['c'];
         }
     }
 
@@ -219,13 +231,14 @@ class A2o_AppSrv_Cli
         echo "Starts the standalone preforking PHP application server.\n";
         echo "\n";
         echo "Mandatory arguments to long options are mandatory for short options too.\n";
+        echo "  -g, --generate-config        generate default config file\n";
         echo "  -d, --debug[=LEVEL]          enable debugging to STDOUT. LEVEL specifies verbosity\n";
         echo "                                 between 1 (lowest) and 9 (highest)\n";
-        echo "  -i, --ini=FILE               use ini file FILE\n";
+        echo "  -c, --config=FILE            use ini file FILE\n";
         echo "  -h, --help     display this help and exit\n";
         echo "  -v, --version  output version information and exit\n";
         echo "\n";
-        echo "Report bugs to <bug-appsrv@a2o.si>.\n";
+        echo "Report bugs to <bostjan@a2o.si>.\n";
         exit;
     }
 
@@ -250,51 +263,117 @@ class A2o_AppSrv_Cli
 
 
     /**
+     * Displays help and exits
+     *
+     * @return   void
+     */
+    private function ___action_generateConfig ()
+    {
+        echo "; Default configuration for A2o_AppSrv\n";
+        echo "\n";
+
+        $longestOptionName   = 0;
+        $longestDefaultValue = 0;
+        foreach ($this->___parent->__configArray_defaults as $section => $options) {
+            // Get longest optionName and defaultValue
+            foreach ($options as $optionName => $defaultValue) {
+                $optionNameLength   = strlen($optionName);
+                $defaultValueLength = strlen($defaultValue);
+                if ($optionNameLength > $longestOptionName) {
+                    $longestOptionName = $optionNameLength;
+                }
+                if ($defaultValueLength > $longestDefaultValue) {
+                    $longestDefaultValue = $defaultValueLength;
+                }
+            }
+        }
+
+        // Render
+        foreach ($this->___parent->__configArray_defaults as $section => $options) {
+            echo "[$section]\n";
+
+            foreach ($options as $optionName => $defaultValue) {
+                $optionNameLength   = strlen($optionName);
+                $defaultValueLength = strlen($defaultValue);
+                $optionDescription  = $this->___parent->__configArray_comments[$section][$optionName];
+
+                echo "$optionName";
+                echo str_repeat(' ', $longestOptionName - $optionNameLength);
+                echo " = ";
+                echo "$defaultValue";
+                echo str_repeat(' ', $longestDefaultValue - $defaultValueLength);
+                echo "   ; $optionDescription\n";
+            }
+
+            echo "\n";
+        }
+
+        // Add exemplary custom sections
+        echo "[Custom_section_1]\n";
+        echo "custom_value_1 = a\n";
+        echo "custom_value_2 = b\n";
+        echo "\n";
+        echo "[Custom_section_2]\n";
+        echo "custom_value_1 = a\n";
+        echo "custom_value_2 = b\n";
+        exit;
+    }
+
+
+
+    /**
      * Parse the .ini config file and store whole array
      *
      * @return   void
      */
-    private function ___parseIniFile ()
+    private function ___parseConfigFile ()
     {
         // Shall we skip config file parsing altogether
-        if ($this->_parseIniFile !== true) {
+        if ($this->___parseConfigFile != true) {
             $this->_debug('Skipping .ini file parsing');
             return;
         }
 
         // Prepare path
-        $iniFile =& $this->_iniFile;
+        $configFile = $this->___parent->__configFile;
 
-        // File accessibility checks
-        if (!file_exists($iniFile))
-            $this->_cliProcess_error("Config .ini file does not exist: $iniFile");
-        if (!is_file($iniFile))
-            $this->_cliProcess_error("Config .ini file is not a file: $iniFile");
-        if (!is_readable($iniFile))
-            $this->_cliProcess_error("Config .ini file is not readable: $iniFile");
+        // Just assign it if it is an array
+        if (is_array($configFile)) {
+            $this->__configArray_ini = $configFile;
 
-        // Try to parse this ini file finally
-        $iniConfigArray = parse_ini_file($iniFile, true);
-        if ($iniConfigArray === false) {
-            throw new A2o_AppSrv_Exception("Config .ini file parsing FAILED: $iniFile");
-        }
+        } else {
 
-        // Divide the sections between system and custom
-        $sectionPrefix = $this->_parentClassName . '_';
-        foreach ($iniConfigArray as $sectionName => $sectionData) {
-            if (substr($sectionName, 0, strlen($sectionPrefix)) == $sectionPrefix) {
-                // Correct section found
-                $sectionNameShort = substr($sectionName, strlen($sectionPrefix));
-                $this->__configArray_ini[$sectionNameShort] = $sectionData;
-            } else {
-                $this->__configArray_custom[$sectionName] = $sectionData;
+            // File accessibility checks
+            if (!file_exists($configFile))
+                $this->_cliProcess_error("Config .ini file does not exist: $configFile");
+            if (!is_file($configFile))
+                $this->_cliProcess_error("Config .ini file is not a file: $configFile");
+            if (!is_readable($configFile))
+                $this->_cliProcess_error("Config .ini file is not readable: $configFile");
+
+            // Try to parse this ini file finally
+            $iniConfigArray = parse_ini_file($configFile, true);
+            if ($iniConfigArray === false) {
+                throw new A2o_AppSrv_Exception("Config .ini file parsing FAILED: $configFile");
+            }
+
+            // Divide the sections between system and custom
+            $sectionPrefix = $this->___parent->__configSectionPrefix;
+            foreach ($iniConfigArray as $sectionName => $sectionData) {
+                if (substr($sectionName, 0, strlen($sectionPrefix)) == $sectionPrefix) {
+                    // Correct section found
+                    $sectionNameShort = substr($sectionName, strlen($sectionPrefix));
+                    $this->__configArray_ini[$sectionNameShort] = $sectionData;
+                } else {
+                    $this->__configArray_custom[$sectionName] = $sectionData;
+                }
             }
         }
 
         // Some debugging hints
-        $this->_parent->__debug_r($this->__configArray_cli, 8);
-        $this->_parent->__debug_r($this->__configArray_ini, 8);
-        $this->_parent->__debug_r($this->__configArray_custom, 8);
+        $this->___parent->__debug_r($this->__configArray_cli, 8);
+        $this->___parent->__debug_r($this->__configArray_ini, 8);
+        $this->___parent->__debug_r($this->__configArray_custom, 8);
     }
 
 
@@ -306,15 +385,8 @@ class A2o_AppSrv_Cli
      */
     private function _cliProcess_error ($msg)
     {
-        $this->_debugEnable = true;
-        $this->_parent->__log("ERROR: $msg");
-
-        if ($this->_pidFileCreated) {
-            $this->_debug("Removing pid file: $this->_pidFile", 1);
-            unlink($this->_pidFile);
-        }
-
-        $this->_parent->__log('Exiting...');
+        $this->___parent->__log("ERROR: $msg");
+        $this->___parent->__log('Exiting...');
         exit(1);
     }
 
@@ -325,8 +397,8 @@ class A2o_AppSrv_Cli
      *
      * Outputs error message and exits
      */
-    protected function _debug ($message, $importanceLevel)
+    private function _debug ($message, $importanceLevel=5)
     {
-    	$this->_parent->__debug($message, $importanceLevel);
+    	$this->___parent->__debug($message, $importanceLevel);
     }
 }

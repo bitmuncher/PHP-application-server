@@ -39,53 +39,35 @@ class A2o_AppSrv_Master
     /**
      * Parent instance object
      */
-    protected $_parent = false;
-
-    /**
-     * Parent class name
-     */
-    protected $_parentClassName = false;
+    protected $___parent = false;
 
     /**
      * Configuration array
      */
-    protected $___configArray = false;
+    protected $_config = false;
 
     /**
-     * Configuration array
+     * From config: Daemon
      */
-    protected $___configArray_custom = false;
-
-    /**
-     * From configArray (ini file): Daemon
-     */
+    protected $_daemonize      = true;
     protected $_executableName = 'A2o_AppSrv';
-    protected $_workDir        = '/opt/daemons/A2o_AppSrv';
+    protected $_workDir        = '/opt/daemons/A2o/AppSrv';
     protected $_pid            = false;
-    protected $_pidFile        = '/opt/daemons/A2o_AppSrv/A2o_AppSrv.pid';
+    protected $_pidFile        = '/opt/daemons/A2o/AppSrv/A2o_AppSrv.pid';
     protected $_pidFileCreated = false;
     protected $_user           = 'nobody';
     protected $_group          = 'nogroup';
 
     /**
-     * From configArray (ini file): Socket
+     * From config: Socket
      */
     protected $_listenAddress       = '0.0.0.0';
     protected $_listenPort          = 30000;
     protected $_listenStream        = false;
     protected $_listenStreamContext = false;
 
-    protected $_ssl                 = false;
-    protected $_ssl_cafile          = '/opt/daemons/A2o_AppSrv/ca.pem';
-    protected $_ssl_localCert       = '/opt/daemons/A2o_AppSrv/cert.pem';
-    protected $_ssl_passphrase      = '';
-    protected $_ssl_verifyPeer      = true;
-    protected $_ssl_verifyDepth     = 1;
-    protected $_ssl_allowSelfSigned = false;
-    protected $_ssl_cnMatch         = '*.a2o.si';
-
     /**
-     * From configArray (ini file): Workers
+     * From config: Workers
      */
     protected $_workers_min     = 2;
     protected $_workers_minIdle = 1;
@@ -125,13 +107,10 @@ class A2o_AppSrv_Master
      * @param    string   Parent class name, used for ini parsing (section prefix)
      * @return   void
      */
-    public function __construct ($parent, $parentClassName)
+    public function __construct ($parent)
     {
-    	$this->_parent          = $parent;
-	$this->_parentClassName = $parentClassName;
-
-	$this->___configArray        =& $this->_parent->__configArray;
-    	$this->___configArray_custom =& $this->_parent->__configArray_custom;
+    	$this->___parent =  $parent;
+	$this->_config   =& $this->___parent->_config;
     }
 
 
@@ -144,7 +123,7 @@ class A2o_AppSrv_Master
     public function __run ()
     {
     	// First merge the config with internal variables
-	$this->___configArray_apply();
+	$this->___configApply();
 
         // Daemonise if debugging is not enabled
 	$this->___daemoniseIfRequired();
@@ -163,42 +142,24 @@ class A2o_AppSrv_Master
      *
      * @return   void
      */
-    private function ___configArray_apply ()
+    private function ___configApply ()
     {
-        $ca =& $this->___configArray;
+        $ca =& $this->_config;
 
         // Parse through sections
         $iniSection = 'Daemon';
-        $this->_executableName    = $ca[$iniSection]['executable_name'];
-        $this->_workDir           = $ca[$iniSection]['work_dir'];
-        $this->_pidFile           = $ca[$iniSection]['pid_file'];
-        $this->_user              = $ca[$iniSection]['user'];
-        $this->_group             = $ca[$iniSection]['group'];
-
-        $iniSection = 'Logging';
-        if ($ca[$iniSection]['debug_to_screen']) {
-            $this->_debugEnabled = true;
-        } else {
-            $this->_debugEnabled = false;
-    	}
-
-        $iniSection = 'Socket';
-        $this->_listenAddress       = $ca[$iniSection]['listen_address'];
-        $this->_listenPort          = $ca[$iniSection]['listen_port'];
-        $this->_ssl                 = $ca[$iniSection]['ssl'];
-        $this->_ssl_cafile          = $ca[$iniSection]['ssl_cafile'];
-        $this->_ssl_localCert       = $ca[$iniSection]['ssl_local_cert'];
-        $this->_ssl_passphrase      = $ca[$iniSection]['ssl_passphrase'];
-        $this->_ssl_verifyPeer      = $ca[$iniSection]['ssl_verify_peer'];
-        $this->_ssl_verifyDepth     = $ca[$iniSection]['ssl_verify_depth'];
-        $this->_ssl_allowSelfSigned = $ca[$iniSection]['ssl_allow_self_signed'];
-        $this->_ssl_cnMatch         = $ca[$iniSection]['ssl_CN_match'];
+        $this->_daemonize           = $ca[$iniSection]['daemonize'];
+        $this->_executableName      = $ca[$iniSection]['executable_name'];
+        $this->_workDir             = $ca[$iniSection]['work_dir'];
+        $this->_pidFile             = $ca[$iniSection]['pid_file'];
+        $this->_user                = $ca[$iniSection]['user'];
+        $this->_group               = $ca[$iniSection]['group'];
 
 	$iniSection = 'Workers';
-        $this->_mp_minWorkers     = $ca[$iniSection]['min_workers'];
-        $this->_mp_minIdleWorkers = $ca[$iniSection]['min_idle_workers'];
-        $this->_mp_maxIdleWorkers = $ca[$iniSection]['max_idle_workers'];
-        $this->_mp_maxWorkers     = $ca[$iniSection]['max_workers'];
+        $this->_mp_minWorkers       = $ca[$iniSection]['min_workers'];
+        $this->_mp_minIdleWorkers   = $ca[$iniSection]['min_idle_workers'];
+        $this->_mp_maxIdleWorkers   = $ca[$iniSection]['max_idle_workers'];
+        $this->_mp_maxWorkers       = $ca[$iniSection]['max_workers'];
     }
 
 
@@ -212,9 +173,9 @@ class A2o_AppSrv_Master
     private function ___daemoniseIfRequired ()
     {
         // If debugging is enabled, do not fork, just init the CLI (current process) as MASTER
-        if ($this->_debugEnabled) {
-            $this->_debug("Debug mode enabled thus not forking, just silently initializing as master");
-            $this->_parent->__registerMe_asMaster();
+        if ($this->_config['Daemon']['daemonize'] == false) {
+            $this->_log("Debug mode enabled thus not forking, just silently initializing as master");
+            $this->___parent->__registerMe_asMaster();
             $this->_pid = getmypid();
             return;
         }
@@ -231,7 +192,7 @@ class A2o_AppSrv_Master
 
         // Here is the child which is a daemon now - master process
         // Register as ma master process
-        $this->_parent->__registerMe_asMaster();
+        $this->___parent->__registerMe_asMaster();
         $this->_pid = getmypid();
     }
 
@@ -277,6 +238,10 @@ class A2o_AppSrv_Master
     	// Common init
         set_time_limit(0);
         ob_implicit_flush();
+
+        // Display all errors
+        ini_set('display_errors', 1);
+        ini_set('error_reporting', E_ALL);
     }
 
 
@@ -291,11 +256,20 @@ class A2o_AppSrv_Master
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        if ($this->_ssl == false) {
+        if ($this->_config['Ssl']['enabled'] == false) {
             $this->___init_stream_normal();
         } else {
             $this->___init_stream_ssl();
         }
+
+        // Set stream to non-blocking
+        $r = stream_set_blocking($this->_listenStream, 0);
+        if ($r === false) {
+            $this->_error("Unable to set stream to non-blocking.");
+        }
+
+        $this->_log("Listening stream initialization complete.");
+
     }
 
 
@@ -314,19 +288,27 @@ class A2o_AppSrv_Master
         $streamContext = stream_context_create($contextOptions);
 
         // Initialize listening stream
+        $localSocket = 'tcp://'. $this->_config['Socket']['listen_address'] .':'. $this->_config['Socket']['listen_port'];
         $r = stream_socket_server(
-            "tcp://$this->_listenAddress:$this->_listenPort",
-            $errno,
-            $errstr,
+            $localSocket,
+            $errNo,
+            $errStr,
             STREAM_SERVER_LISTEN | STREAM_SERVER_BIND,
             $streamContext
         );
+
+        // Check for error
         if ($r === false) {
             $this->_error("Unable to create listening stream");
         }
+        if ($errNo != 0) {
+            $this->_error("Unable to open secure listening stream: $errStr");
+        }
+
+        // Assign it
         $this->_listenStream = $r;
 
-        $this->_log("Listening stream initialization complete: tcp://$this->_listenAddress:$this->_listenPort");
+        $this->_debug("Listening stream created: $localSocket");
     }
 
 
@@ -340,45 +322,38 @@ class A2o_AppSrv_Master
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        // Create SSL context for stream
-        $contextOptions = array(
-            'ssl' => array(
-                'cafile'             => $this->_ssl_cafile,
-                'local_cert'         => $this->_ssl_localCert,
-                'passphrase'         => $this->_ssl_passphrase,
-                'verify_peer'        => $this->_ssl_verifyPeer,
-                'verify_depth'       => $this->_ssl_verifyDepth,
-                'allow_self_signed'  => $this->_ssl_allowSelfSigned,
-                'capture_peer_cert'  => true,
-                'capture_peer_chain' => true,
-            )
-        );
-        if ($this->_ssl_cnMatch != '') {
-            $contextOptions['ssl']['CN_match'] = $this->_ssl_cnMatch;
+        // Initialize context options
+        if ($this->_config['Ssl']['CN_match'] == '') {
+            $contextOptions['ssl']['CN_match'] = NULL;
         }
+        $contextOptions = array(
+            'ssl' => $this->_config['Ssl'],
+        );
+        $contextOptions['ssl']['capture_peer_cert']  = true;
+        $contextOptions['ssl']['capture_peer_chain'] = true;
+ 
+        // Create SSL context for stream
         $streamContext = stream_context_create($contextOptions);
 
-        // Create stream
-        $this->_listenStream = stream_socket_server(
-            "ssl://$this->_listenAddress:$this->_listenPort",
-            $errno,
-            $errstr,
+        // Initialize listening stream
+        $localSocket = $this->_config['Ssl']['type'] .'://'. $this->_config['Socket']['listen_address'] .':'. $this->_config['Socket']['listen_port'];
+        $r = stream_socket_server(
+            $localSocket,
+            $errNo,
+            $errStr,
             STREAM_SERVER_LISTEN | STREAM_SERVER_BIND,
             $streamContext
         );
 
         // Check for error
-        if ($errno != 0) {
-            $this->_error("Unable to open secure listening stream: $errstr");
+        if ($errNo != 0) {
+            $this->_error("Unable to open secure listening stream: $errStr");
         }
+        
+        // Assign it
+        $this->_listenStream = $r;
 
-        // Set to non-blocking
-        $r = stream_set_blocking($this->_listenStream, 0);
-        if ($r === false) {
-            $this->_error("Unable to set stream to non-blocking.");
-        }
-
-        $this->_log("Listening stream initialization complete: ssl://$this->_listenAddress:$this->_listenPort");
+        $this->_debug("Listening stream created: $localSocket");
     }
 
 
@@ -393,8 +368,8 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	// Get current uid and gid
-    	$uid_cur = posix_geteuid();
-    	$gid_cur = posix_getegid();
+    	$uid_cur = posix_getuid();
+    	$gid_cur = posix_getgid();
 
     	// If not root, skip the rest of this procedure
     	if ($uid_cur != 0) {
@@ -521,7 +496,7 @@ class A2o_AppSrv_Master
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
-        $this->_parent->__init_signalHandler();
+        $this->___parent->__init_signalHandler();
     }
 
 
@@ -539,7 +514,7 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Note the logfile
-        $this->_log("A2o_AppSrv ". $this->_parent->getVersion() .": Resuming normal operations");
+        $this->_log("A2o_AppSrv ". $this->___parent->getVersion() .": Resuming normal operations");
 
         // If we have just entered this method, this means
         // that initialization phase is complete and we are idle
@@ -687,7 +662,7 @@ class A2o_AppSrv_Master
             if ($this->_mp_isWorkerRegistered($workerId)) {
                 $this->_ipc_tellWorker_workerId($workerId);
             } else {
-                $this->_parent->__log("Worker id=$workerId died unexpectedly");
+                $this->___parent->__log("Worker id=$workerId died unexpectedly");
             }
             return 'i_am_master';
         } else {
@@ -851,14 +826,14 @@ class A2o_AppSrv_Master
                 break;
             case SIGTERM:
                 $this->_debug("Caught SIGTERM, running shutdown method...");
-                $this->_parent->__exit();
+                $this->___parent->__exit();
                 break;
             case SIGINT:
                 $this->_debug("Caught SIGINT, running shutdown method...");
-                $this->_parent->__exit();
+                $this->___parent->__exit();
                 break;
             default:
-                $this->_parent->__log("Caught unknown signal $signo, running shitdown method...");
+                $this->___parent->__log("Caught unknown signal $signo, running shitdown method...");
                 $this->_exit();
         }
     }
@@ -971,17 +946,17 @@ class A2o_AppSrv_Master
 
     /**
      * Handles the graceful exit of master process, signals to children to
-     * stop working and exit, but does not exit the process, _parent class
+     * stop working and exit, but does not exit the process, ___parent class
      * does that.
      *
      * @return   void
      */
-    public function __exit ($exitStatus=0)
+    public function __exitCleanup ()
     {
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Notice the log
-        $this->_log("A2o_AppSrv ". $this->_parent->getVersion() .": Starting shutdown");
+        $this->_log("A2o_AppSrv ". $this->___parent->getVersion() .": Starting shutdown");
 
         // Kill the workers if necessary
         $this->___exit_killWorkers();
@@ -1043,7 +1018,7 @@ class A2o_AppSrv_Master
      */
     protected function _debug ($message, $importanceLevel=5)
     {
-    	$this->_parent->__debug($message, $importanceLevel);
+    	$this->___parent->__debug($message, $importanceLevel);
     }
 
 
@@ -1053,7 +1028,7 @@ class A2o_AppSrv_Master
      */
     protected function _debug_r ($var, $importanceLevel=5)
     {
-    	$this->_parent->__debug_r($var, $importanceLevel);
+    	$this->___parent->__debug_r($var, $importanceLevel);
     }
 
 
@@ -1062,7 +1037,7 @@ class A2o_AppSrv_Master
      */
     protected function _log ($message)
     {
-    	$this->_parent->__log($message);
+    	$this->___parent->__log($message);
     }
 
 
@@ -1072,7 +1047,7 @@ class A2o_AppSrv_Master
      */
     protected function _warning ($message)
     {
-    	$this->_parent->__warning($message);
+    	$this->___parent->__warning($message);
     }
 
 
@@ -1082,6 +1057,6 @@ class A2o_AppSrv_Master
      */
     protected function _error ($message)
     {
-    	$this->_parent->__error($message);
+    	$this->___parent->__error($message);
     }
 }

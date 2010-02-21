@@ -11,11 +11,11 @@ $options = array(
     CURLOPT_VERBOSE        => 0,
 );
 
-while (true) {
+//while (true) {
 
 $ch = curl_init('https://localhost:30000/');
 curl_setopt_array($ch,$options);
 $content = curl_exec($ch);
 
 echo $content;
-}
+//}

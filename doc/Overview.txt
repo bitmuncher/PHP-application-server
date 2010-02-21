@@ -9,7 +9,8 @@ Overview
 
 
 
-Framework consists of #FIXME main elements:
+Framework consists of 6 main elements
+-------------------------------------
 1. Parent                (A2o_AppSrv class)
 2. CLI process part      (A2o_AppSrv_Cli class)
 3. Master process part   (A2o_AppSrv_Master class)
@@ -17,55 +18,8 @@ Framework consists of #FIXME main elements:
 5. IPC part              (A2o_AppSrv_IPC class)
 6. Client part(s)        (A2o_AppSrv_Client(_*) classes)
 
-CLI, master and workers communicate to the Parent via "parent" object property,
-which is assigned when instantiating an object via constructor.
-
-
-
-
-Method naming convention
-------------------------
-
-Methods that DO NOT start with underscore prefix are public methods and can be:
-- accessed from anywhere
-- overriden by extending the class.
-
-Methods that start with a single underscore prefix:
-- are protected methods,
-- can be overriden by extending the class,
-- are intended to be accessed from user functions.
-
-Methods that start with double underscore prefix:
-- are public in the context of A2o_AppSrv inner workings,
-- could be called from anywhere within A2o_AppSrv,
-- not intended for final public use.
-Example:
-
-    $this->_parent->__registerMe_asWorker();
-
-This registers the given process as a worker process. These methods should not 
-be overriden. Obviously internal methods __construct() and __destruct() do 
-not follow this rule as they are PHP internals.
-
-Methods that start with triple underscore prefix:
-- are private to a single class,
-- should not be overriden.
-
-
-
-
-Requirements
-------------
-
-The following programs and PHP modules/extensions are required:
-- BASH or compatible shell
-- ps
-- grep
-- sed
-- PHP >=5.2.x
-- PHP extension: pcntl
-- PHP extension: posix
-- PHP extension: sockets
+CLI, master and workers communicate to the Parent via "$___parent" object
+property, which is assigned when instantiating an object via constructor.
 
 
 
@@ -84,3 +38,125 @@ How program executes and works
 4. Option merging TODO
 5. Master part TODO
 6. Worker part TODO
+
+
+
+
+Method naming convention
+------------------------
+Methods that DO NOT start with underscore prefix are public methods and can be:
+- accessed from anywhere
+- overriden by extending the class.
+
+Methods that start with a single underscore prefix:
+- are protected methods,
+- can be overriden by extending the class,
+- are intended to be accessed by end users.
+
+Methods that start with double underscore prefix:
+- are public in the context of A2o_AppSrv inner workings,
+- could be called from anywhere within A2o_AppSrv,
+- not intended for final public use.
+Example:
+
+    $this->___parent->__registerMe_asWorker();
+
+This registers the given process as a worker process. These methods should not 
+be overriden. Obviously internal methods __construct() and __destruct() do 
+not follow this rule as they are PHP internals.
+
+Methods that start with triple underscore prefix:
+- are private to a single class,
+- should not be overriden.
+
+
+
+
+Property naming convention
+--------------------------
+Property names follow the same general convention as methods.
+
+
+
+
+Naming convention and exceptions
+--------------------------------
+Class names and directory structure follow the Zend naming convention. This
+enables Zend Autoloader functionality.
+Usually words in method and property names are separated by capitalising first
+letter of each word, with the exception of first letter. Thus, a normal name of
+a property should be:
+
+    $this->__internalAppSrvPublicProperty
+    $this->__internalAppSrvPublicMethod()
+
+Ocasionally there are additional underscores contained in a property or method
+names, if there are more items which belong to the same context. Using array
+would be cumbersome, so in order to make a clear distinction between context and
+actual entity we insert another underscore. Like this (from A2o/AppSrv.php):
+
+    protected $_className        = 'A2o_AppSrv';
+    protected $_className_cli    = 'A2o_AppSrv_Cli';
+    protected $_className_master = 'A2o_AppSrv_Master';
+    protected $_className_worker = 'A2o_AppSrv_Worker';
+    protected $_className_log    = 'A2o_AppSrv_Log';
+    protected $_className_debug  = 'A2o_AppSrv_Debug';
+
+
+
+
+Configuration parsing and merging
+---------------------------------
+Some or all parts of the framework can be configured in the following ways:
+- command line arguments
+- PHP hardcoded
+- config file
+- default values (should not be changed)
+- custom sections from config file
+
+First of all, configSectionPrefix is stripped from config sections. Default
+prefix is 'A2o_AppSrv_'. This should prevent mixing system config sections with
+user config sections.
+Configuration is merged from the bottom up. This means that if a config option
+appears on the command line, that option prevails all the others. If it appears
+only as hardcoded PHP code, that value is used. Otherwise values from config
+file are used. If that is not possible (config file parsing disabled or value
+does not exist in config file) then default value is used.
+At the end custom sections are added
+Additional (user defined) configuration sections are also parsed and stored for
+use in master and/or worker objects.
+
+WARNING   Don't use the same section/variable names as system does.
+WARNING
+WARNING   Section 'A2o_AppSrv_Socket' will overwrite custom section called
+WARNING  'Socket', if configSectionPrefix == 'A2o_AppSrv_'.
+
+
+
+
+Configuration options
+---------------------
+Invoke daemon with '-g' switch to generate default config file.
+
+
+
+
+Command line invocation
+-----------------------
+Use argument '-h' for help which will provide all the information available for
+daemon invocation options.
+
+
+
+
+System requirements
+-------------------
+The following programs and PHP modules/extensions are required:
+- BASH or compatible shell
+- ps
+- grep
+- sed
+- PHP >=5.2.x
+- PHP extension: pcntl
+- PHP extension: posix
+- PHP extension: sockets

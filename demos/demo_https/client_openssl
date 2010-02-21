@@ -1,1 +1,1 @@
-openssl s_client -host localhost -port 30000 -cert certs/client.pem
+openssl s_client -host localhost -port 30000 -cert certs/client.pem -ssl3 -aaa
