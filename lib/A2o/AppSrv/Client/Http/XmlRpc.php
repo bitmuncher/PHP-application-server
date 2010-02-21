@@ -42,7 +42,7 @@ require_once 'A2o/AppSrv/Client/Http.php';
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
  * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
-class A2o_AppSrv_Client_XmlRpc extends A2o_AppSrv_Client_Http
+class A2o_AppSrv_Client_Http_XmlRpc extends A2o_AppSrv_Client_Http
 {
     /**
      * Raw XML-RPC request
@@ -71,10 +71,10 @@ class A2o_AppSrv_Client_XmlRpc extends A2o_AppSrv_Client_Http
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
 	// Parent will do the request reading
-    	parent::readRequest();
+	parent::readRequest();
 
-    	// Assign and decode the request
-    	$this->request_raw    =& $this->requestBody;
-    	$this->request_params =  xmlrpc_decode_request($this->request_raw, $this->request_method);
+	// Assign and decode the request
+	$this->request_raw    =& $this->requestBody;
+	$this->request_params =  xmlrpc_decode_request($this->request_raw, $this->request_method);
     }
 }

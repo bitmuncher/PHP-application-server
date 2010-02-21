@@ -45,10 +45,7 @@ require_once 'A2o/AppSrv/Client/Abstract.php';
 class A2o_AppSrv_Client_Generic extends A2o_AppSrv_Client_Abstract
 {
     /**
-     * Reads the HTTP request from client
-     *
-     * Starts reading the request headers and if Content-Length header is
-     * encountered, reads the request body also.
+     * Does not do any request reading
      *
      * @return   void
      */
@@ -69,9 +66,9 @@ class A2o_AppSrv_Client_Generic extends A2o_AppSrv_Client_Abstract
      */
     public function writeError ($errorMessage)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$this->write($errorMessage ."\n");
+	$this->write($errorMessage ."\n");
     }
 
 
@@ -86,8 +83,8 @@ class A2o_AppSrv_Client_Generic extends A2o_AppSrv_Client_Abstract
      */
     public function writeResponse ($response)
     {
-		$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-		$this->write($response);
+	$this->write($response);
     }
 }
