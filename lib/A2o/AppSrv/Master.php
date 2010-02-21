@@ -323,15 +323,18 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Initialize context options
-        if ($this->_config['Ssl']['CN_match'] == '') {
-            $contextOptions['ssl']['CN_match'] = NULL;
-        }
         $contextOptions = array(
             'ssl' => $this->_config['Ssl'],
         );
         $contextOptions['ssl']['capture_peer_cert']  = true;
         $contextOptions['ssl']['capture_peer_chain'] = true;
- 
+
+        // CN_match must not exist if otherwise what it does is comparison of
+        // empty string agains peer CN which obviously fails
+        if ($this->_config['Ssl']['CN_match'] == '') {
+            unset($contextOptions['ssl']['CN_match']);
+        }
+
         // Create SSL context for stream
         $streamContext = stream_context_create($contextOptions);
 

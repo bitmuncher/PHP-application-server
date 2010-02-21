@@ -68,7 +68,7 @@ final class A2o_AppSrv_Cli
     public function __construct ($parent, $parseCliArgs=true)
     {
         // Set the parent object and register the process
-        $this->___setParent($parent, $parentClassName);
+        $this->___parent = $parent;
         $this->___parent->__registerMe_asCli();
 
         // Get config file
@@ -116,22 +116,6 @@ final class A2o_AppSrv_Cli
         } else {
             throw new A2o_AppSrv_Exception('ERR_CONSTRUCTOR_parent->configFile_INVALID');
         }
-    }
-
-
-
-    /**
-     * __setParent
-     *
-     * @param    object   Save parent object reference for future access
-     * @return   void
-     */
-    private function ___setParent ($parent)
-    {
-        if ($this->___parent !== false) {
-            throw new A2o_AppSrv_Exception('Parent object already set');
-        }
-        $this->___parent = $parent;
     }
 
 

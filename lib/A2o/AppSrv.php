@@ -389,14 +389,14 @@ class A2o_AppSrv
         $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	// Set logging and debugging options
-    	if ($this->_config['Master']['daemonize'] == true) {
+    	if ($this->_config['Daemon']['daemonize'] == true) {
             $this->___log->openLogFile($this->_config['Logging']['log_file']);
     	} else {
             $this->___log->enableLogToScreen();
         }
     	$this->___debug->setThreshold($this->_config['Logging']['log_level']);
-echo $this->_config['Logging']['log_level'];
-    	// Dump config array
+
+        // Dump config array
     	$this->__debug("Configuration array dump START", 8);
     	$this->__debug_r($this->_config, 8);
     	$this->__debug("Configuration array dump END", 8);
