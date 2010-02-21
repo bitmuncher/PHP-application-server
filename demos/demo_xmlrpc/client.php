@@ -24,4 +24,3 @@ if (xmlrpc_is_fault($response)) {
 } else {
     print_r($response);
 }
-?>

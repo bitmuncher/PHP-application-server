@@ -250,6 +250,8 @@ class A2o_AppSrv
      */
     private function ___configArrays_merge ()
     {
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+
     	$r = $this->___array_replace_recursive($this->_configArray_default, $this->_configArray_ini, $this->_configArray_cli);
     	$this->__configArray = $r;
     }
@@ -263,17 +265,17 @@ class A2o_AppSrv
      */
     private function ___configArray_apply ()
     {
-    	// Enable logging
-    	$this->_log->openLogFile($this->__configArray['Logging']['log_file']);
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
     	// Set debugging options
     	$this->_debug->setThreshold($this->__configArray['Logging']['debug_level']);
     	if ($this->__configArray['Logging']['debug_to_screen']) {
             $this->_log->enableLogToScreen();
-            $this->_log->closeLogFile();
-    	}
+    	} else {
+            $this->_log->openLogFile($this->__configArray['Logging']['log_file']);
+        }
 
-    	// Debug the array
+    	// Dump config array
     	$this->__debug("Configuration array dump START", 8);
     	$this->__debug_r($this->__configArray, 8);
     	$this->__debug("Configuration array dump END", 8);
@@ -324,6 +326,8 @@ class A2o_AppSrv
      */
     public function __registerMe_asMaster ()
     {
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+
         $this->_whoAmI     = 'master';
         $this->_whoAmI_log = 'MASTER';
         $this->_whoAmI_pid = getmypid();
@@ -339,6 +343,8 @@ class A2o_AppSrv
      */
     public function __registerMe_asWorker ()
     {
+        $this->__debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
+
         $this->_whoAmI     = 'worker';
         $this->_whoAmI_log = 'worker';
         $this->_whoAmI_pid = getmypid();
@@ -422,7 +428,7 @@ class A2o_AppSrv
     public function __warning ($message)
     {
         $messageFinal = "WARNING: $message";
-    	$this->__log($messageFinal, $importanceLevel);
+    	$this->__log($messageFinal);
     }
 
 

@@ -75,7 +75,7 @@ class A2o_AppSrv_Cli
      */
     public function __construct ($parent, $parentClassName, $ini=NULL, $parseCliArgs=true)
     {
-    	// Set the parent object and register the process
+        // Set the parent object and register the process
         $this->__setParent($parent, $parentClassName);
         $this->_parent->__registerMe_asCli();
 
@@ -123,7 +123,7 @@ class A2o_AppSrv_Cli
      */
     public function __setParent ($parent, $parentClassName)
     {
-	if ($this->_parent !== false)
+        if ($this->_parent !== false)
             throw new A2o_AppSrv_Exception('Parent object already set');
         $this->_parent = $parent;
         $this->_parentClassName = $parentClassName;

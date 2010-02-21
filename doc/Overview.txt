@@ -53,6 +53,7 @@ Methods that start with triple underscore prefix:
 
 
 
+
 Requirements
 ------------
 
@@ -65,3 +66,21 @@ The following programs and PHP modules/extensions are required:
 - PHP extension: pcntl
 - PHP extension: posix
 - PHP extension: sockets
+
+
+
+
+How program executes and works
+------------------------------
+1. It all starts with A2o_AppSrv class method run()
+- inits log and debug subsystems
+- goes to CLI option processing
+- merges ini and CMDLINE options
+- surrenders execution to A2o_AppSrv_Master->__run()
+- if master returns from execution, it is a child and thus goes to A2o_AppSrv_Master->run()
+
+2. Log and debug part TODO
+3. CLI part TODO
+4. Option merging TODO
+5. Master part TODO
+6. Worker part TODO

@@ -62,25 +62,6 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
 
 
     /**
-     * Constructor
-     *
-     * @param    parent     Parent object
-     * @param    resource   Stream handle
-     * @param    string     Remote IP address
-     * @param    integer    Remote TCP port
-     * @return   void
-     */
-/*
- * FIXME remove
-    public function __construct ($parent, $stream, $address, $port)
-    {
-		parent::__construct($parent, $stream, $address, $port);
-    }
-*/
-
-
-
-    /**
      * Reads the HTTP request from client
      *
      * Starts reading the request headers and if Content-Length header is

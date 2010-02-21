@@ -1,0 +1,1 @@
+curl -k --cert certs/client.pem https://localhost:30000/

@@ -267,6 +267,14 @@ class A2o_AppSrv_Worker
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Check if any client is waiting for connection
+        $readStreams   = array($this->_listenStream);
+        $writeStreams  = NULL;
+        $exceptStreams = NULL;
+        $r = @stream_select($readStreams, $writeStreams, $exceptStreams, 1, 0);
+        if ($r == false) {
+            return false;
+        }
+
         $r = @stream_socket_accept($this->_listenStream, 0);
         if ($r === false) {
             return false;
@@ -386,6 +394,7 @@ class A2o_AppSrv_Worker
         // Close the connection to client
         if ($this->_client !== false) {
             $this->_client->closeConnection();
+            unset($this->_client);
             $this->_client = false;
         }
 

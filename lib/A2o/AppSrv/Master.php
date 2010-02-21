@@ -343,20 +343,24 @@ class A2o_AppSrv_Master
         // Create SSL context for stream
         $contextOptions = array(
             'ssl' => array(
-                'cafile'            => $this->_ssl_cafile,
-                'local_cert'        => $this->_ssl_localCert,
-                'passphrase'        => $this->_ssl_passphrase,
-                'verify_peer'       => $this->_ssl_verifyPeer,
-                'verify_depth'      => $this->_ssl_verifyDepth,
-                'allow_self_signed' => $this->_ssl_allowSelfSigned,
-                'CN_match'          => $this->_ssl_cnMatch,
+                'cafile'             => $this->_ssl_cafile,
+                'local_cert'         => $this->_ssl_localCert,
+                'passphrase'         => $this->_ssl_passphrase,
+                'verify_peer'        => $this->_ssl_verifyPeer,
+                'verify_depth'       => $this->_ssl_verifyDepth,
+                'allow_self_signed'  => $this->_ssl_allowSelfSigned,
+                'capture_peer_cert'  => true,
+                'capture_peer_chain' => true,
             )
         );
+        if ($this->_ssl_cnMatch != '') {
+            $contextOptions['ssl']['CN_match'] = $this->_ssl_cnMatch;
+        }
         $streamContext = stream_context_create($contextOptions);
 
         // Create stream
         $this->_listenStream = stream_socket_server(
-            "tls://$this->_listenAddress:$this->_listenPort",
+            "ssl://$this->_listenAddress:$this->_listenPort",
             $errno,
             $errstr,
             STREAM_SERVER_LISTEN | STREAM_SERVER_BIND,
@@ -374,7 +378,7 @@ class A2o_AppSrv_Master
             $this->_error("Unable to set stream to non-blocking.");
         }
 
-        $this->_log("Listening stream initialization complete: tls://$this->_listenAddress:$this->_listenPort");
+        $this->_log("Listening stream initialization complete: ssl://$this->_listenAddress:$this->_listenPort");
     }
 
 
@@ -597,12 +601,15 @@ class A2o_AppSrv_Master
 
 		// what kind of exit
 		if (pcntl_wifexited($status)) {
-		    $this->_debug("Worker $workerId exited normally");
-		    $this->_mp_unregisterWorker($workerId);
+                    if ($status == 0) {
+                        $this->_debug("Worker $workerId exited normally ($status)");
+                    } else {
+                        $this->_warning("Worker $workerId died  with status $status");
+                    }
 		} else {
-		    $this->_debug("Worker $workerId died with status $status");
-		    $this->_mp_unregisterWorker($workerId);
+		    $this->_warning("Worker $workerId died with status $status");
 		}
+                $this->_mp_unregisterWorker($workerId);
 	    }
 	}
     }
