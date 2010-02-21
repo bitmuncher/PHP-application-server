@@ -93,7 +93,6 @@ class A2o_AppSrv_Log {
     public function openLogFile ($logFile)
     {
         // File accessibility checks
-            echo "aasdfadfadfafasf\n";
         if (file_exists($logFile)) {
             if (!is_file($logFile))
                 throw new A2o_AppSrv_Exception("Log file is not a regular file: $logFile");
