@@ -14,7 +14,7 @@ $autoloader->registerNamespace('A2o_');
 
 
 // Instantiate the application server object
-$AppSrvDemo = new A2o_AppSrv('/opt/daemons/A2o/AppSrv/demos/demo_xmlrpc/demo.ini');
+$AppSrvDemo = new A2o_AppSrv('/opt/daemons/A2o/AppSrv/examples/demo_xmlrpc/demo.ini');
 
 // Include the Worker class
 require dirname(__FILE__) . '/A2o_AppSrv_Worker_DemoXmlRpc.php';
