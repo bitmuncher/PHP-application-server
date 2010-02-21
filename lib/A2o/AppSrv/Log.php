@@ -124,9 +124,6 @@ final class A2o_AppSrv_Log {
         // Enable file and disable screen logging
         $this->_logToFile   = true;
         $this->_logToScreen = false;
-
-        // Assign it - THINK, FIXME
-        //$this->_debug("Using log file: $logFile", 6);
     }
 
 

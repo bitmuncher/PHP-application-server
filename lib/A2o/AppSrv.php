@@ -129,7 +129,7 @@ class A2o_AppSrv
             'allowed_ips_regex' => '127\.0\.0\.1',
         ),
     );
-    public  $__configArray_comments = array(     // Comments to values
+    public  $__configArray_comments = array(     // Comments to options
         'Daemon' => array(
             'daemonize'         => '(bool) Whether to daemonize or stay in foreground',
             'executable_name'   => '(string) Name of executable, for searching the process table',
@@ -288,8 +288,12 @@ class A2o_AppSrv
         if (!class_exists($className)) {
             throw new A2o_AppSrv_Exception("Invalid class name: $className");
         }
-        //FIXME
-    	$this->___className_master = $className;
+
+        if (!isset($this->___configArray_php['Master'])) {
+            $this->___configArray_php['Master'] = array();
+        }
+
+    	$this->___configArray_php['Master']['class_name'] = $className;
     }
 
 
@@ -302,8 +306,12 @@ class A2o_AppSrv
         if (!class_exists($className)) {
             throw new A2o_AppSrv_Exception("Invalid class name: $className");
         }
-        //FIXME
-    	$this->___className_worker = $className;
+
+        if (!isset($this->___configArray_php['Workers'])) {
+            $this->___configArray_php['Workers'] = array();
+        }
+
+        $this->___configArray_php['Workers']['class_name'] = $className;
     }
 
 
@@ -411,9 +419,8 @@ class A2o_AppSrv
      */
     private function ___array_replace_recursive()
     {
-        // FIXME for PHP 5.3 replace with array_replace_recursive
-
         $retArray = array();
+
         for ($i=0 ; $i<func_num_args() ; $i++) {
             $arr = func_get_arg($i);
             foreach ($arr as $secName => $secData) {

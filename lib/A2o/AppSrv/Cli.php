@@ -154,7 +154,7 @@ final class A2o_AppSrv_Cli
         $shortOpts .= 'd::';
         $shortOpts .= 'c:';
 
-        // These long options available - FIXME
+        // These long options are available
         $longOpts   = array(
             'help',
             'version',

@@ -164,30 +164,12 @@ class A2o_AppSrv_Worker
         if (is_callable(array($this, 'preInit'))) $this->preInit();
 
         // Then proceed with initialization
-        $this->___init_listenStream();
         $this->___init_signalHandler();
 
         // If exists, call custom initialization method
         if (is_callable(array($this, 'init'))) $this->init();
 
         $this->_debug('Initialization complete');
-    }
-
-
-
-    /**
-     * Initialize listening stream
-     *
-     * @return   void
-     */
-    private function ___init_listenStream ()
-    {
-        $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
-
-        // Set the stream to non-blocking FIXME done in master?
-//        stream_set_blocking($this->_listenStream, 0);
-
-        $this->_debug('Listening stream initialization complete');
     }
 
 
@@ -228,11 +210,11 @@ class A2o_AppSrv_Worker
                 continue;
             }
 
-            //$this->_setStatus('working');
+            // FIXME $this->_setStatus('working');
 
             $this->handleConnection($this->_client_stream, $this->_client_address, $this->_client_port);
 
-            //$this->_setStatus('idle'); // FIXME
+            // FIXME $this->_setStatus('idle');
         } while (true);
 
         throw new A2o_AppSrv_Exception("Reached the forbidden execution branch");
