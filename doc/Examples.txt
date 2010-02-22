@@ -1,0 +1,20 @@
+Usage examples
+--------------
+There are a couple of examples in the examples/ directory. To make them work as 
+fast as possible, create a symlink like this:
+
+    /opt/daemons/A2o/AppSrv ----> /exact/location/of/PHP-application-server
+
+Then cd into a desired example directory and start daemon with:
+
+    ./demo -d5
+
+This does not fork daemon in the background so you can see what is going on in 
+your console. If demo also provides a client, you can start it with:
+
+    ./client
+
+Otherwise you should use telnet as a sample client, like this:
+
+    telnet localhost 30000
+

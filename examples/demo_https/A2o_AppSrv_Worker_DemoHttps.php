@@ -38,7 +38,7 @@ class A2o_AppSrv_Worker_DemoHttps extends A2o_AppSrv_Worker
 
     		    	    		
     	// Get request
-    	$request = $client->request;
+    	$request = $client->requestRaw;
 
     	// Construct response
     	$response = "Your name is: $client->sslCN\n";

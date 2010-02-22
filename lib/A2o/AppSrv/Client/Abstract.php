@@ -231,7 +231,7 @@ abstract class A2o_AppSrv_Client_Abstract
      *
      * @return   void
      */
-    abstract public function writeResponse ($response);
+    abstract public function writeResponse ($response = NULL);
 
 
 

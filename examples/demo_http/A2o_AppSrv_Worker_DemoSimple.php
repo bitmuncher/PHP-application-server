@@ -14,7 +14,7 @@ class A2o_AppSrv_Worker_DemoSimple extends A2o_AppSrv_Worker
 	}
 
     	// Get request
-    	$request = $client->request;
+    	$request = $client->requestRaw;
 
     	// Construct response
     	$response = $request ."\n\nI do work, you know, copying the input to the output...\n";
