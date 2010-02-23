@@ -64,7 +64,7 @@ class A2o_AppSrv_Worker_DemoXmlRpc extends A2o_AppSrv_Worker
     	$client->readRequest();
 
     	// Get request
-    	$request_raw = $client->request_raw;
+    	$request_raw = $client->requestRawXml;
 
     	// Construct response
     	$response = xmlrpc_server_call_method($this->XmlRpcServer, $request_raw, NULL);

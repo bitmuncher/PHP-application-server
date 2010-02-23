@@ -33,7 +33,7 @@ require_once 'A2o/AppSrv/Client/Http.php';
 
 
 /**
- * Standalone preforking PHP application server framework
+ * Xml-Rpc client
  *
  * @category   A2o
  * @package    A2o_AppSrv
@@ -42,22 +42,22 @@ require_once 'A2o/AppSrv/Client/Http.php';
  * @copyright  Copyright (c) 2009 Bostjan Skufca (http://a2o.si)
  * @license    http://www.gnu.org/licenses/gpl.html     GNU GPLv3
  */
-class A2o_AppSrv_Client_Http_XmlRpc extends A2o_AppSrv_Client_Http
+class A2o_AppSrv_Client_XmlRpc extends A2o_AppSrv_Client_Http
 {
     /**
      * Raw XML-RPC request
      */
-    public $request_raw = NULL;
+    public $requestRawXml = NULL;
 
     /**
      * Decoded XML-RPC request method
      */
-    public $request_method = NULL;
+    public $method = NULL;
 
     /**
      * Decoded XML-RPC request params
      */
-    public $request_params = NULL;
+    public $params = NULL;
 
 
 
@@ -74,7 +74,10 @@ class A2o_AppSrv_Client_Http_XmlRpc extends A2o_AppSrv_Client_Http
 	parent::readRequest();
 
 	// Assign and decode the request
-	$this->request_raw    =& $this->requestBody;
-	$this->request_params =  xmlrpc_decode_request($this->request_raw, $this->request_method);
+	$this->requestRawXml =& $this->requestRawBody;
+	$this->params        =  xmlrpc_decode_request($this->requestRawXml, $this->method);
+
+        // Set the response header
+        $this->setResponseHeader('Content-type', 'text/xml');
     }
 }

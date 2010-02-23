@@ -231,6 +231,26 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
 
 
     /**
+     * Sets the response header.
+     *
+     * If header names are CI identical, later prevails
+     *
+     * @param    string   Header name
+     * @param    string   Header value
+     * @return   void
+     */
+    public function setResponseHeader ($name, $value)
+    {
+        $name = strtolower(trim($name));
+        if ($name == 'content-length') {
+            throw new A2o_AppSrv_Client_Exception('Header Content-Length is added automatically');
+        }
+        $this->responseHeaders[$name] = $value;
+    }
+
+
+
+    /**
      * writeResponse
      *
      * Writes response to the client
@@ -238,7 +258,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
      * @param    string    HTTP response content without headers
      * @return   void
      */
-    public function writeResponse ($response = NULL)
+    public function writeResponse ($response)
     {
         $this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
@@ -251,7 +271,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
         }
 
         // Is response passed or what?
-        if ($response === NULL) $response = $this->responseBody;
+        $this->responseBody = $response;
 
         // Add content legth
         $responseFinal .= "Content-Length: ". strlen($response) ."\r\n";
