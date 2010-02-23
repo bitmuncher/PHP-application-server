@@ -39,7 +39,7 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.5.0b';
+    const version = '0.5.0rc1';
 
 
 
@@ -65,6 +65,8 @@ class A2o_AppSrv
 
     /**
      * Master process PID, for workers if required
+     *
+     * @var int
      */
     public $__masterPid = 'uninit';   // (uninit|pid of current process)
 
@@ -471,7 +473,7 @@ class A2o_AppSrv
 
 
     /**
-     * Registers the given process as MASTER process
+     * Registers the given process as WORKER process
      *
      * @return   void
      */
