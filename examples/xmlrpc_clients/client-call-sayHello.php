@@ -1,3 +1,4 @@
+#!/usr/local/bin/php
 <?php
 
 
@@ -16,14 +17,13 @@ $client = new Zend_XmlRpc_Client('http://localhost:30000/');
 
 // Which call and with what parameters
 // Watch double array for parameters
-$method = 'ns2.getServerTime';
-$params = 'Y-m-d H:i:s';
+$method = 'sayHello';
 
 
 
 // Call and evaluate
 try {
-    $result = $client->call($method, $params);
+    $result = $client->call($method);
 } catch (Zend_Exception $e) {
     echo "Error calling server method: ". $e->getMessage() ."\n";
     exit;
