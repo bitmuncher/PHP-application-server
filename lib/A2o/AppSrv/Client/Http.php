@@ -88,6 +88,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
     public $responseStatusCode    = '200';
     public $responseStatusMessage = 'OK';
     public $responseHeaders       = array(
+        'server'       => 'A2o_AppSrv - Standalone preforking PHP application server framework',
         'connection'   => 'close',
         'content-type' => 'text/html',
     );
@@ -246,6 +247,24 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
             throw new A2o_AppSrv_Client_Exception('Header Content-Length is added automatically');
         }
         $this->responseHeaders[$name] = $value;
+    }
+
+
+
+    /**
+     * Removes response header.
+     *
+     * Case insensitive matching
+     *
+     * @param    string   Header name
+     * @return   void
+     */
+    public function removeResponseHeader ($name)
+    {
+        $name = strtolower(trim($name));
+	if (isset($this->responseHeaders[$name])) {
+	    unset($this->responseHeaders[$name]);
+	}
     }
 
 

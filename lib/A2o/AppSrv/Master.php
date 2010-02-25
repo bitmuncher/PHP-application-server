@@ -517,7 +517,7 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Note the logfile
-        $this->_log("A2o_AppSrv ". $this->___parent->getVersion() .": Resuming normal operations");
+        $this->_log($this->_executableName ." ". $this->___parent->getVersion() .": Resuming normal operations");
 
         // If we have just entered this method, this means
         // that initialization phase is complete and we are idle
