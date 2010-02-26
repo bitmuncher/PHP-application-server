@@ -87,7 +87,7 @@ class A2o_AppSrv_Client_XmlRpcZend extends A2o_AppSrv_Client_XmlRpc
      * @param    Zend_XmlRpc_Response|Zend_XmlRpc_Server_Fault   Response object
      * @return   void
      */
-    public function writeZendResponse ($response)
+    public function writeResponse ($response)
     {
         $this->responseBody = $response->saveXml();
         parent::writeResponse($this->responseBody);

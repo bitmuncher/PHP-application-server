@@ -38,13 +38,30 @@ class A2o_AppSrv_Master
 {
     /**
      * Parent instance object
+     *
+     * @var A2o_AppSrv
      */
     protected $___parent = false;
 
+
+
     /**
-     * Configuration array
+     * Daemon version, if left to false retrieved from parent
+     *
+     * @var string
+     */
+    protected $_version = false;
+
+
+
+    /**
+     * Configuration array - whole configuration from ini file
+     *
+     * @var array
      */
     protected $_config = false;
+
+
 
     /**
      * From config: Daemon
@@ -58,6 +75,8 @@ class A2o_AppSrv_Master
     protected $_user           = 'nobody';
     protected $_group          = 'nogroup';
 
+
+
     /**
      * From config: Socket
      */
@@ -66,6 +85,8 @@ class A2o_AppSrv_Master
     protected $_listenStream        = false;
     protected $_listenStreamContext = false;
 
+
+
     /**
      * From config: Workers
      */
@@ -73,6 +94,8 @@ class A2o_AppSrv_Master
     protected $_workers_minIdle = 1;
     protected $_workers_maxIdle = 2;
     protected $_workers_max     = 10;
+
+
 
     /**
      * Pool of workers
@@ -89,6 +112,7 @@ class A2o_AppSrv_Master
      *   );
      */
     protected $_workers = array();
+
 
 
     /**
@@ -111,6 +135,11 @@ class A2o_AppSrv_Master
     {
     	$this->___parent =  $parent;
 	$this->_config   =& $this->___parent->_config;
+
+	// Assign version
+	if ($this->_version === false) {
+	    $this->_version = $this->___parent->getAppSrvVersion();
+	}
     }
 
 
@@ -517,7 +546,7 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Note the logfile
-        $this->_log($this->_executableName ." ". $this->___parent->getVersion() .": Resuming normal operations");
+        $this->_log($this->_executableName ." ". $this->_version .": Resuming normal operations");
 
         // If we have just entered this method, this means
         // that initialization phase is complete and we are idle
@@ -960,7 +989,7 @@ class A2o_AppSrv_Master
         $this->_debug("-----> ". __CLASS__ . '::' . __FUNCTION__ .'()', 9);
 
         // Notice the log
-        $this->_log("A2o_AppSrv ". $this->___parent->getVersion() .": Starting shutdown");
+        $this->_log($this->_executableName ." ". $this->_version .": Starting shutdown");
 
         // Kill the workers if necessary
         $this->___exit_killWorkers();

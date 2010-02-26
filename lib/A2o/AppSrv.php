@@ -213,7 +213,7 @@ class A2o_AppSrv
     /**
      * Get version
      */
-    public function getVersion ()
+    public function getAppSrvVersion ()
     {
     	return self::version;
     }
