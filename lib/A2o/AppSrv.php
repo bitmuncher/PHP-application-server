@@ -39,7 +39,7 @@ class A2o_AppSrv
     /**
      * Version of this framework
      */
-    const version = '0.5.0rc1';
+    const version = '0.5.0rc2';
 
 
 

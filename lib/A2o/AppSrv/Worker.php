@@ -540,6 +540,16 @@ class A2o_AppSrv_Worker
 
 
     /**
+     * Parent method wrapper for exit
+     */
+    protected function _exit ($status=0)
+    {
+    	$this->___parent->__exit($status);
+    }
+
+
+
+    /**
      * Parent method wrapper for debug messages
      */
     protected function _debug ($message, $importanceLevel=5)
