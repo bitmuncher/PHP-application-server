@@ -56,12 +56,13 @@ abstract class A2o_AppSrv_Client_Abstract
     public $port = NULL;
 
     /**
+     * For readLine method
+     *
      * Number of consecutive empty reads, max, timeout in seconds
-     * FreeBSD workaround
+     * FreeBSD workaround. Whole timeout is 5 seconds (Max * delay)
      */
-    protected $__nrConsecutiveEmptyReads        =   0;
-    protected $__nrConsecutiveEmptyReadsMax     = 100;
-    protected $__nrConsecutiveEmptyReadsTimeout =   1;   // Seconds
+    protected $__nrConsecutiveEmptyReadsMax     =   100;
+    protected $__delayBetweenEmptyReads         = 50000;   // Micro seconds
 
 
 
@@ -132,12 +133,28 @@ abstract class A2o_AppSrv_Client_Abstract
     {
 	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."()", 9);
 
-	// Try to read	
-	$r = fgets($this->stream, 16384);
-	if ($r === false) {
-            return $this->_analyseStreamError();
+        $nrConsecutiveEmptyReads = 0;
+        $line = '';
+        while ($nrConsecutiveEmptyReads < $this->__nrConsecutiveEmptyReadsMax) {
+            $nrConsecutiveEmptyReads++;
+
+            // Try to read	
+	    $r = fgets($this->stream, 16384);
+	    if ($r === false) {
+                $this->_checkStreamForError();
+                $r = '';
+            } else {
+	        $line .= $r;
+            }
+
+            // If there is newline present in received stuff, return whole line
+            if (preg_match('/\n$/', $r)) {
+                return $line;
+            }
+
+            // Now sleep for allocated time
+            usleep($this->__delayBetweenEmptyReads);
         }
-	$line = $r;
 
         // If empty content, bump the empty reads counter
         if ($line == '') {
@@ -146,20 +163,10 @@ abstract class A2o_AppSrv_Client_Abstract
             $this->__nrConsecutiveEmptyReads = 0;
         }
 
-        // If too many empty reads, sleep and try again, and throw exception if another empty read
+        // If too many empty reads throw an exception
         // Basically FreeBSD workaround (Linux returns 'Connection reset by peer above')
-        if ($this->__nrConsecutiveEmptyReads > $this->__nrConsecutiveEmptyReadsMax) {
-            sleep($this->__nrConsecutiveEmptyReadsTimeout);
-            $r = fgets($this->stream, 16384);
-            if ($r === false) throw new A2o_AppSrv_Client_Exception('Connection reset by peer');
-            $line = $r;
-
-            if ($line == '') {
-                throw new A2o_AppSrv_Client_Exception('Timeout reading client request');
-            }
-        }
-
-	return $line;
+        $this->_checkStreamForError();
+        throw new A2o_AppSrv_Client_Exception('Timeout reading line from client');
     }
 
 
@@ -207,12 +214,11 @@ abstract class A2o_AppSrv_Client_Abstract
      *
      * @return   void
      */
-    public function _analyseStreamError ()
+    public function _checkStreamForError ()
     {
         $metaData = stream_get_meta_data($this->stream);
         if ($metaData['timed_out'] == 1) throw new A2o_AppSrv_Client_Exception('Connection timeout');
         if ($metaData['eof']       == 1) throw new A2o_AppSrv_Client_Exception('Connection reset by peer');
-        throw new A2o_AppSrv_Client_Exception('Connection closed unexpectedly');
     }
 
 
