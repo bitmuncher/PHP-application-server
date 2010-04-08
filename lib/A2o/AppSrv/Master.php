@@ -318,7 +318,7 @@ class A2o_AppSrv_Master
 
         // Initialize listening stream
         $localSocket = 'tcp://'. $this->_config['Socket']['listen_address'] .':'. $this->_config['Socket']['listen_port'];
-        $r = stream_socket_server(
+        $r = @stream_socket_server(
             $localSocket,
             $errNo,
             $errStr,
@@ -328,7 +328,9 @@ class A2o_AppSrv_Master
 
         // Check for error
         if ($r === false) {
-            $this->_error("Unable to create listening stream");
+	    $errorData = error_get_last();
+	    $errorMessage = $errorData['message'];
+            $this->_error("Unable to create listening stream: $errorMessage");
         }
         if ($errNo != 0) {
             $this->_error("Unable to open secure listening stream: $errStr");
@@ -369,7 +371,7 @@ class A2o_AppSrv_Master
 
         // Initialize listening stream
         $localSocket = $this->_config['Ssl']['type'] .'://'. $this->_config['Socket']['listen_address'] .':'. $this->_config['Socket']['listen_port'];
-        $r = stream_socket_server(
+        $r = @stream_socket_server(
             $localSocket,
             $errNo,
             $errStr,
@@ -378,6 +380,11 @@ class A2o_AppSrv_Master
         );
 
         // Check for error
+        if ($r === false) {
+	    $errorData = error_get_last();
+	    $errorMessage = $errorData['message'];
+            $this->_error("Unable to create secure listening stream: $errorMessage");
+        }
         if ($errNo != 0) {
             $this->_error("Unable to open secure listening stream: $errStr");
         }
@@ -995,9 +1002,12 @@ class A2o_AppSrv_Master
         $this->___exit_killWorkers();
 
         // Close the listening stream
-        $r = fclose($this->_listenStream);
-        $this->_debug('Listening stream closed');
-
+	if (is_resource($this->_listenStream)) {
+    	    $r = fclose($this->_listenStream);
+    	    $this->_debug('Listening stream closed');
+	} else {
+    	    $this->_warning('Listening stream was not open');
+	}
 
         // Remove pidfile
         if ($this->_pidFileCreated) {
