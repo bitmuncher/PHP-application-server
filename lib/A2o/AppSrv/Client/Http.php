@@ -286,7 +286,7 @@ class A2o_AppSrv_Client_Http extends A2o_AppSrv_Client_Abstract
 
         // Add headers
         foreach ($this->responseHeaders as $headerField => $headerValue) {
-            $responseFinal .= "$headerField: $headerValue\r\n";
+            $responseFinal .= ucfirst($headerField) .": $headerValue\r\n";
         }
 
         // Is response passed or what?

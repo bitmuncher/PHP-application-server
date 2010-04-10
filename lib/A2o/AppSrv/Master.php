@@ -644,6 +644,11 @@ class A2o_AppSrv_Master
         $workersCount = $this->_mp_countWorkers();
         $idleWorkersCount = $this->_mp_countIdleWorkers();
 
+	// If there is only one worker alive and there is maximum of 1 worker configured, do not fork it nor emit any warning
+        if (($workersCount == 1) && ($this->_mp_maxWorkers == 1)) {
+	    return;
+	}
+
         // Is there is already max number of workers
         if ($workersCount >= $this->_mp_maxWorkers) {
             $this->_warning("Maximum number of workers reached: $this->_mp_maxWorkers");
