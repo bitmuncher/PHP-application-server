@@ -105,19 +105,23 @@ abstract class A2o_AppSrv_Client_Abstract
     /**
      * Reads given length from client stream handle
      *
-     * Function is blocking until that many characters are received from client
+     * Method is blocking until that many characters are received from client
      *
      * @param    integer   Number of bytes to read
      * @return   string
      */
-    public function read ($length)
+    public function read ($bytesToRead)
     {
-	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."($length)", 9);
+	$this->_debug("-----> ". __CLASS__ .'::'. __FUNCTION__ ."($bytesToRead)", 9);
 
-	$r = fread($this->stream, $length);
-	if ($r === false) throw new A2o_AppSrv_Client_Exception('Unable to read from client');
+        $content = '';
+        while (strlen($content) < $bytesToRead) {
+	    $r = fread($this->stream, $bytesToRead - strlen($content));
+	    if ($r === false) throw new A2o_AppSrv_Client_Exception('Unable to read from client');
+            $content .= $r;
+        }
 
-	return $r;
+	return $content;
     }
 
 
